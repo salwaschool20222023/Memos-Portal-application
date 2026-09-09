@@ -891,10 +891,6 @@
                     <i class="fa-solid fa-book-bookmark"></i> اللائحة التنفيذية 2026 (كاملة)
                 </button>
 
-                <!-- رابط مباشر لملف الـ PDF الخام إن احتاجت فتحه كاملاً بدون تصفح الأبواب -->
-                <a href="#" id="sidebarBylawLink" target="_blank" class="extra-btn" style="background:#334155;">
-                    <i class="fa-solid fa-file-pdf"></i> فتح ملف اللائحة PDF مباشرة
-                </a>
                 <a href="#" id="sidebarCalendarLink" target="_blank" class="extra-btn" style="background:#0284c7;">
                     <i class="fa-solid fa-calendar-days"></i> التقويم التربوي 2026/2027
                 </a>
@@ -1084,7 +1080,6 @@
         let currentSubTabKey = 'circulars-ministerial';
 
         window.onload = function() {
-            document.getElementById('sidebarBylawLink').href = BYLAW_PDF_URL;
             document.getElementById('sidebarCalendarLink').href = CALENDAR_PDF_URL;
             loadAllDocumentsFromSupabase().then(() => {
                 renderSection('home');
