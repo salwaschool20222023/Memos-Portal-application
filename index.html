@@ -1,0 +1,1874 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>بوابة التعاميم Memos Portal - ثانوية سلوى بنات</title>
+    <!-- خط Tajawal وأيقونات FontAwesome -->
+    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- إعدادات تطبيق الويب التقدمي (PWA) لتثبيت الموقع كتطبيق على آيفون وأندرويد -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#0b132b">
+    <link rel="apple-touch-icon" href="icon-192.png">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="بوابة التعاميم">
+    <!-- مكتبة Supabase للتعامل مع قاعدة البيانات والتخزين السحابي -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+    <style>
+        :root {
+            --primary-dark: #0b132b;
+            --primary-blue: #1c2541;
+            --accent-blue: #3a506b;
+            --bright-blue: #0077b6;
+            --light-blue: #00b4d8;
+            --danger-red: #e11d48;
+            --success-green: #10b981;
+            --gold-accent: #d97706;
+            --soft-bg: #f4f7fc;
+            --card-bg: #ffffff;
+            --text-dark: #1e293b;
+            --text-muted: #64748b;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Tajawal', sans-serif;
+        }
+
+        body {
+            background-color: var(--soft-bg);
+            color: var(--text-dark);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        header {
+            background: linear-gradient(135deg, var(--primary-dark), var(--primary-blue));
+            color: white;
+            padding: 1rem 2rem;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .header-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .brand-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .school-logo {
+            width: 70px;
+            height: 70px;
+            background: #fff;
+            border-radius: 50%;
+            padding: 3px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.25);
+            object-fit: contain;
+        }
+
+        .brand-text .ministry-hierarchy {
+            font-size: 0.85rem;
+            color: var(--light-blue);
+            font-weight: 700;
+            margin-bottom: 2px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            flex-wrap: wrap;
+        }
+
+        .school-name-highlight {
+            font-size: 1.05rem;
+            font-weight: 800;
+            color: #ffffff;
+        }
+
+        .brand-text h1 {
+            font-size: 1.8rem;
+            font-weight: 800;
+            color: #ffffff;
+            line-height: 1.2;
+        }
+
+        .brand-text h1 span.en-title {
+            font-size: 1.1rem;
+            color: var(--light-blue);
+            font-weight: 600;
+            margin-right: 6px;
+            direction: ltr;
+            display: inline-block;
+        }
+
+        .brand-text p.tagline {
+            font-size: 0.85rem;
+            color: #e2e8f0;
+            margin-top: 3px;
+            font-weight: 500;
+        }
+
+        .designer-btn {
+            background: linear-gradient(135deg, var(--bright-blue), var(--light-blue));
+            color: white;
+            border: none;
+            padding: 0.65rem 1.4rem;
+            border-radius: 25px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            box-shadow: 0 4px 12px rgba(0, 180, 216, 0.3);
+        }
+
+        .designer-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 18px rgba(0, 180, 216, 0.5);
+        }
+
+        .admin-status-bar {
+            background: #dcfce7;
+            color: #166534;
+            padding: 0.5rem 1rem;
+            font-size: 0.85rem;
+            font-weight: 700;
+            display: none;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #bbf7d0;
+        }
+
+        .sync-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: rgba(16, 185, 129, 0.15);
+            color: #10b981;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 700;
+        }
+
+        .sync-pulse {
+            width: 8px;
+            height: 8px;
+            background-color: #10b981;
+            border-radius: 50%;
+            box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
+            animation: pulse 1.6s infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
+            70% { transform: scale(1); box-shadow: 0 0 0 6px rgba(16, 185, 129, 0); }
+            100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+        }
+
+        .layout-wrapper {
+            display: grid;
+            grid-template-columns: 280px 1fr;
+            max-width: 1400px;
+            width: 100%;
+            margin: 1.5rem auto;
+            gap: 1.5rem;
+            padding: 0 1rem;
+            flex: 1;
+        }
+
+        aside.sidebar {
+            background: var(--card-bg);
+            border-radius: 16px;
+            padding: 1.2rem;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.04);
+            border: 1px solid #e2e8f0;
+            height: fit-content;
+        }
+
+        .sidebar-title {
+            font-size: 1.1rem;
+            font-weight: 800;
+            color: var(--primary-blue);
+            margin-bottom: 1rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 2px solid var(--light-blue);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .nav-list {
+            list-style: none;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .nav-item {
+            padding: 0.75rem 1rem;
+            border-radius: 10px;
+            color: var(--text-dark);
+            font-weight: 600;
+            font-size: 0.95rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .nav-item:hover, .nav-item.active {
+            background: linear-gradient(90deg, #e0f2fe, #f0f9ff);
+            color: var(--bright-blue);
+            border-right: 4px solid var(--bright-blue);
+        }
+
+        .extra-links {
+            margin-top: 1.5rem;
+            padding-top: 1rem;
+            border-top: 1px dashed #cbd5e1;
+        }
+
+        .extra-btn {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            width: 100%;
+            padding: 0.75rem;
+            margin-bottom: 8px;
+            border-radius: 8px;
+            background: var(--primary-blue);
+            color: white;
+            border: none;
+            cursor: pointer;
+            font-size: 0.88rem;
+            font-weight: 700;
+            transition: 0.2s;
+            text-align: right;
+            text-decoration: none;
+        }
+
+        .extra-btn:hover {
+            background: var(--bright-blue);
+        }
+
+        .notify-active {
+            background: #059669 !important;
+        }
+
+        main.content-area {
+            background: var(--card-bg);
+            border-radius: 16px;
+            padding: 2rem;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.04);
+            border: 1px solid #e2e8f0;
+        }
+
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .section-header h2 {
+            font-size: 1.4rem;
+            color: var(--primary-dark);
+            font-weight: 800;
+        }
+
+        .sub-tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 1.5rem;
+            flex-wrap: wrap;
+            border-bottom: 1px solid #e2e8f0;
+            padding-bottom: 0.8rem;
+        }
+
+        .sub-tab-btn {
+            background: #e2e8f0;
+            border: none;
+            padding: 0.5rem 1.2rem;
+            border-radius: 20px;
+            font-weight: 700;
+            color: var(--text-dark);
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+        .sub-tab-btn.active {
+            background: var(--bright-blue);
+            color: white;
+        }
+
+        .files-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
+            gap: 1.2rem;
+        }
+
+        .file-card {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 1.2rem;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        .file-card:hover {
+            border-color: var(--light-blue);
+            box-shadow: 0 5px 15px rgba(0, 180, 216, 0.12);
+        }
+
+        .file-info {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            margin-bottom: 1rem;
+        }
+
+        .file-icon {
+            font-size: 2.2rem;
+            color: var(--bright-blue);
+        }
+
+        .file-details h4 {
+            font-size: 0.95rem;
+            color: var(--primary-dark);
+            margin-bottom: 4px;
+        }
+
+        .file-details span {
+            font-size: 0.78rem;
+            color: var(--text-muted);
+        }
+
+        .actions-group {
+            display: flex;
+            gap: 6px;
+            margin-top: 0.8rem;
+            flex-wrap: wrap;
+        }
+
+        .btn-action {
+            flex: 1;
+            padding: 0.55rem;
+            border-radius: 6px;
+            font-weight: 700;
+            font-size: 0.82rem;
+            border: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+            text-decoration: none;
+        }
+
+        .btn-view { background: var(--bright-blue); color: white; }
+        .btn-download { background: var(--accent-blue); color: white; }
+        .btn-edit { background: #f59e0b; color: white; }
+        .btn-delete { background: var(--danger-red); color: white; }
+
+        .welcome-hero {
+            text-align: center;
+            padding: 2.5rem 1.5rem 2rem;
+            background: linear-gradient(135deg, #eff6ff, #f4f7fc);
+            border-radius: 16px;
+            border: 1px solid #e2e8f0;
+            margin-bottom: 1.8rem;
+        }
+
+        .welcome-icon {
+            font-size: 2.6rem;
+            color: var(--bright-blue);
+            margin-bottom: 0.8rem;
+        }
+
+        .welcome-hero h2 {
+            font-size: 1.6rem;
+            font-weight: 800;
+            color: var(--primary-dark);
+            margin-bottom: 0.3rem;
+        }
+
+        .welcome-hero > p {
+            color: var(--bright-blue);
+            font-weight: 700;
+            font-size: 1rem;
+        }
+
+        .welcome-sub {
+            color: var(--text-muted) !important;
+            font-weight: 500 !important;
+            font-size: 0.92rem;
+            max-width: 560px;
+            margin: 0.8rem auto 0 !important;
+            line-height: 1.7;
+        }
+
+        .welcome-quick-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 1rem;
+        }
+
+        .welcome-quick-card {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 1.3rem 1rem;
+            text-align: center;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+        .welcome-quick-card:hover {
+            border-color: var(--light-blue);
+            background: #eff6ff;
+            transform: translateY(-2px);
+        }
+
+        .welcome-quick-card i {
+            font-size: 1.6rem;
+            color: var(--bright-blue);
+            display: block;
+            margin-bottom: 0.5rem;
+        }
+
+        .welcome-quick-card span {
+            font-weight: 700;
+            font-size: 0.9rem;
+            color: var(--primary-dark);
+        }
+
+        .minister-speech-card {
+            background: linear-gradient(135deg, #1e3a8a, #0f172a);
+            color: white;
+            border-radius: 14px;
+            padding: 1.8rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 10px 25px rgba(15, 23, 42, 0.2);
+            position: relative;
+            border-right: 6px solid var(--gold-accent);
+        }
+
+        .minister-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 1rem;
+        }
+
+        .minister-header i {
+            font-size: 2rem;
+            color: var(--gold-accent);
+        }
+
+        .minister-title h3 {
+            font-size: 1.25rem;
+            font-weight: 800;
+            color: #ffffff;
+        }
+
+        .minister-title p {
+            font-size: 0.88rem;
+            color: var(--light-blue);
+            font-weight: 700;
+        }
+
+        .minister-full-speech {
+            background: rgba(255, 255, 255, 0.07);
+            border-right: 3px solid var(--gold-accent);
+            padding: 1.2rem;
+            border-radius: 8px;
+            font-size: 0.93rem;
+            line-height: 1.8;
+            margin-bottom: 1.2rem;
+            color: #f1f5f9;
+            white-space: pre-line;
+        }
+
+        .bylaw-card {
+            background: #ffffff;
+            border-right: 5px solid var(--bright-blue);
+            border-radius: 10px;
+            padding: 1.2rem;
+            margin-bottom: 1rem;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.03);
+            border: 1px solid #e2e8f0;
+            border-right-width: 5px;
+        }
+
+        .bylaw-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.5rem;
+        }
+
+        .bylaw-title {
+            font-weight: 800;
+            color: var(--primary-blue);
+            font-size: 1.05rem;
+        }
+
+        .bylaw-pages {
+            background: #eff6ff;
+            color: var(--bright-blue);
+            padding: 3px 10px;
+            border-radius: 12px;
+            font-size: 0.8rem;
+            font-weight: 700;
+        }
+
+        .bylaw-desc {
+            color: var(--text-muted);
+            font-size: 0.88rem;
+            line-height: 1.5;
+            margin-bottom: 0.8rem;
+        }
+
+        .info-box {
+            background: #ffffff;
+            border: 1px solid #cbd5e1;
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.03);
+        }
+
+        .info-box h3 {
+            color: var(--primary-blue);
+            font-size: 1.15rem;
+            margin-bottom: 1rem;
+            border-bottom: 2px solid #e2e8f0;
+            padding-bottom: 0.5rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .styled-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1rem;
+            font-size: 0.88rem;
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
+            border: 1px solid #cbd5e1;
+        }
+
+        .styled-table th {
+            background: var(--primary-blue);
+            color: white;
+            padding: 10px;
+            text-align: center;
+            font-weight: 700;
+        }
+
+        .styled-table td {
+            padding: 10px;
+            border-bottom: 1px solid #e2e8f0;
+            text-align: center;
+        }
+
+        .styled-table tr:nth-child(even) {
+            background-color: #f8fafc;
+        }
+
+        .hs-list {
+            list-style-type: none;
+            padding-right: 0;
+        }
+
+        .hs-list li {
+            position: relative;
+            padding-right: 1.5rem;
+            margin-bottom: 0.6rem;
+            line-height: 1.6;
+            font-size: 0.92rem;
+        }
+
+        .hs-list li::before {
+            content: "✦";
+            position: absolute;
+            right: 0;
+            color: var(--bright-blue);
+            font-size: 1.1rem;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(11, 19, 43, 0.8);
+            backdrop-filter: blur(4px);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-box {
+            background: white;
+            border-radius: 20px;
+            padding: 2rem;
+            width: 90%;
+            max-width: 520px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.25);
+            position: relative;
+        }
+
+        .close-modal {
+            position: absolute;
+            left: 1.2rem;
+            top: 1.2rem;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: var(--text-muted);
+        }
+
+        .form-group { margin-bottom: 1rem; }
+        .form-group label { display: block; font-weight: 700; margin-bottom: 0.4rem; font-size: 0.9rem; }
+        .form-group input, .form-group select { width: 100%; padding: 0.75rem; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 0.95rem; outline: none; }
+
+        .submit-btn {
+            width: 100%;
+            background: linear-gradient(135deg, var(--bright-blue), var(--primary-blue));
+            color: white;
+            border: none;
+            padding: 0.8rem;
+            border-radius: 8px;
+            font-weight: 700;
+            cursor: pointer;
+            font-size: 1rem;
+            margin-top: 0.5rem;
+        }
+
+        footer {
+            background: var(--primary-dark);
+            color: white;
+            padding: 1.5rem 2rem;
+            margin-top: auto;
+            border-top: 2px solid var(--accent-blue);
+        }
+
+        .footer-content {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 1fr auto 1fr;
+            align-items: center;
+            gap: 15px;
+            font-size: 0.9rem;
+        }
+
+        .footer-credits { justify-self: start; text-align: start; }
+        .footer-credits p { margin: 2px 0; }
+        .footer-credits-title { font-size: 1.05rem; font-weight: 800; color: #ffffff; }
+        .footer-credits-row2 { font-size: 0.85rem; white-space: nowrap; }
+        .footer-copyright { justify-self: center; text-align: center; }
+        .footer-principal { justify-self: end; text-align: end; }
+        .footer-principal p { margin: 2px 0; }
+        .footer-principal-title { font-size: 1.05rem; font-weight: 800; color: #ffffff; }
+
+        .footer-credits span, .footer-principal span { color: var(--light-blue); font-weight: 700; }
+
+        /* ============================================
+           التجاوب مع الأجهزة المختلفة (موبايل / تابلت)
+           ============================================ */
+        .mobile-menu-btn {
+            display: none;
+            align-items: center;
+            gap: 8px;
+            background: rgba(255,255,255,0.12);
+            border: 1px solid rgba(255,255,255,0.25);
+            color: white;
+            font-size: 0.95rem;
+            font-weight: 700;
+            padding: 0.55rem 1rem;
+            border-radius: 10px;
+            cursor: pointer;
+            white-space: nowrap;
+        }
+
+        .sidebar-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(11, 19, 43, 0.55);
+            z-index: 900;
+        }
+
+        @media (max-width: 992px) {
+            .layout-wrapper {
+                grid-template-columns: 1fr;
+                margin: 1rem auto;
+                padding: 0 0.85rem;
+                gap: 1rem;
+            }
+
+            .mobile-menu-btn { display: inline-flex; }
+
+            aside.sidebar {
+                position: fixed;
+                top: 0;
+                right: 0;
+                height: 100vh;
+                width: min(300px, 85vw);
+                z-index: 950;
+                border-radius: 0;
+                overflow-y: auto;
+                transform: translateX(100%);
+                transition: transform 0.25s ease;
+            }
+
+            aside.sidebar.mobile-open { transform: translateX(0); }
+
+            .sidebar-overlay.active { display: block; }
+
+            main.content-area { padding: 1.25rem; }
+        }
+
+        @media (max-width: 760px) {
+            header { padding: 0.85rem 1rem; }
+            .header-container { flex-wrap: wrap; gap: 0.6rem; }
+            .brand-wrapper { gap: 10px; }
+            .school-logo { width: 52px; height: 52px; }
+            .brand-text h1 { font-size: 1.25rem; white-space: nowrap; }
+            .brand-text h1 span.en-title { font-size: 0.8rem; margin-right: 4px; }
+            .brand-text p.tagline { font-size: 0.75rem; }
+            .ministry-hierarchy { font-size: 0.68rem; }
+
+            .section-header { flex-direction: column; align-items: flex-start; }
+            .section-header h2 { font-size: 1.15rem; }
+            main.content-area { padding: 1rem; }
+
+            .files-grid { grid-template-columns: 1fr; }
+            .actions-group { flex-wrap: wrap; }
+            .actions-group .btn-action { flex: 1 1 40%; }
+
+            .modal-box { padding: 1.25rem; width: 92%; max-height: 88vh; overflow-y: auto; }
+
+            .admin-status-bar { flex-direction: column; align-items: flex-start; gap: 6px; padding: 0.6rem 1rem; }
+
+            .footer-content { grid-template-columns: 1fr; text-align: center; gap: 6px; }
+            .footer-credits-row2 { white-space: nowrap; font-size: 0.68rem; }
+            .footer-credits-title { font-size: 0.95rem; }
+            .footer-principal-title { font-size: 0.95rem; }
+            .footer-copyright { white-space: nowrap; font-size: 0.7rem; }
+            .footer-credits, .footer-copyright, .footer-principal { justify-self: center; text-align: center; }
+
+            .minister-speech-card { padding: 1.2rem; }
+            .info-box { padding: 1.1rem; }
+
+            /* السماح بتمرير الجداول أفقياً بدل كسر التصميم */
+            .styled-table { display: block; overflow-x: auto; white-space: nowrap; -webkit-overflow-scrolling: touch; }
+        }
+
+        @media (max-width: 420px) {
+            .brand-text h1 { font-size: 1.05rem; }
+            .designer-btn { padding: 0.5rem 1rem; font-size: 0.85rem; }
+            .sub-tab-btn { padding: 0.45rem 0.9rem; font-size: 0.8rem; }
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="header-container">
+            <button class="mobile-menu-btn" onclick="toggleMobileSidebar()">
+                <i class="fa-solid fa-bars"></i> القائمة
+            </button>
+            <div class="brand-wrapper">
+                <img id="schoolLogo" class="school-logo" alt="شعار ثانوية سلوى بنات" src="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEA3ADcAAD/2wBDAAMCAgMCAgMDAwMEAwMEBQgFBQQEBQoHBwYIDAoMDAsKCwsNDhIQDQ4RDgsLEBYQERMUFRUVDA8XGBYUGBIUFRT/2wBDAQMEBAUEBQkFBQkUDQsNFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBT/wAARCAH8AgkDASIAAhEBAxEB/8QAHwAAAQUBAQEBAQEAAAAAAAAAAAECAwQFBgcICQoL/8QAtRAAAgEDAwIEAwUFBAQAAAF9AQIDAAQRBRIhMUEGE1FhByJxFDKBkaEII0KxwRVS0fAkM2JyggkKFhcYGRolJicoKSo0NTY3ODk6Q0RFRkdISUpTVFVWV1hZWmNkZWZnaGlqc3R1dnd4eXqDhIWGh4iJipKTlJWWl5iZmqKjpKWmp6ipqrKztLW2t7i5usLDxMXGx8jJytLT1NXW19jZ2uHi4+Tl5ufo6erx8vP09fb3+Pn6/8QAHwEAAwEBAQEBAQEBAQAAAAAAAAECAwQFBgcICQoL/8QAtREAAgECBAQDBAcFBAQAAQJ3AAECAxEEBSExBhJBUQdhcRMiMoEIFEKRobHBCSMzUvAVYnLRChYkNOEl8RcYGRomJygpKjU2Nzg5OkNERUZHSElKU1RVVldYWVpjZGVmZ2hpanN0dXZ3eHl6goOEhYaHiImKkpOUlZaXmJmaoqOkpaanqKmqsrO0tba3uLm6wsPExcbHyMnK0tPU1dbX2Nna4uPk5ebn6Onq8vP09fb3+Pn6/9oADAMBAAIRAxEAPwD9U6KKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAoooo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">
+                <div class="brand-text">
+                    <div class="ministry-hierarchy">
+                        <span>وزارة التربية</span>
+                        <i class="fa-solid fa-chevron-left" style="font-size: 0.7rem;"></i>
+                        <span>منطقة حولي التعليمية</span>
+                        <i class="fa-solid fa-chevron-left" style="font-size: 0.7rem;"></i>
+                        <span class="school-name-highlight">ثانوية سلوى - بنات</span>
+                    </div>
+                    <h1>بوابة التعاميم <span class="en-title">Memos Portal</span></h1>
+                    <p class="tagline">بيئة عمل منظمة وتواصل إداري فعال</p>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <div class="admin-status-bar" id="adminStatusBar">
+        <span><i class="fa-solid fa-shield-halved"></i> وضع الإدارة نشط (أ/ غادة دياب). يمكنك الإضافة والتعديل والحذف وتتم المزامنة تلقائياً.</span>
+        <button onclick="logoutDesigner()" style="background:var(--danger-red); color:white; border:none; padding:4px 10px; border-radius:5px; cursor:pointer; font-weight:700;">تسجيل الخروج</button>
+    </div>
+
+    <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleMobileSidebar(false)"></div>
+
+    <div class="layout-wrapper">
+        <aside class="sidebar" id="mainSidebar">
+            <div class="sidebar-title">
+                <span><i class="fa-solid fa-bars-staggered"></i> القائمة الرئيسية</span>
+                <div class="sync-badge" title="تحديث تلقائي للمستندات">
+                    <div class="sync-pulse"></div> مباشر
+                </div>
+            </div>
+            <button class="extra-btn" id="notifyBtn" onclick="enableNotificationsClick()" style="background:#0f766e; margin-bottom:14px;">
+                <i class="fa-solid fa-bell"></i> تفعيل التنبيهات
+            </button>
+            <ul class="nav-list">
+                <li class="nav-item" onclick="switchSection('circulars', this)">
+                    <span><i class="fa-solid fa-file-signature"></i> تعاميم</span>
+                    <i class="fa-solid fa-chevron-left"></i>
+                </li>
+                <li class="nav-item" onclick="switchSection('bulletins', this)">
+                    <span><i class="fa-solid fa-bullhorn"></i> نشرات</span>
+                    <i class="fa-solid fa-chevron-left"></i>
+                </li>
+                <li class="nav-item" onclick="switchSection('decisions', this)">
+                    <span><i class="fa-solid fa-gavel"></i> قرارات</span>
+                    <i class="fa-solid fa-chevron-left"></i>
+                </li>
+                <li class="nav-item" onclick="switchSection('evaluation', this)">
+                    <span><i class="fa-solid fa-chart-line"></i> آليات</span>
+                    <i class="fa-solid fa-chevron-left"></i>
+                </li>
+                <li class="nav-item" onclick="switchSection('plans', this)">
+                    <span><i class="fa-solid fa-map-location-dot"></i> خطط</span>
+                    <i class="fa-solid fa-chevron-left"></i>
+                </li>
+                <li class="nav-item" onclick="switchSection('exam-schedules', this)">
+                    <span><i class="fa-solid fa-calendar-check"></i> جداول الاختبارات</span>
+                    <i class="fa-solid fa-chevron-left"></i>
+                </li>
+                <li class="nav-item" onclick="switchSection('class-schedules', this)">
+                    <span><i class="fa-solid fa-table-cells"></i> جداول الفصول</span>
+                    <i class="fa-solid fa-chevron-left"></i>
+                </li>
+                <li class="nav-item" onclick="switchSection('announcements', this)">
+                    <span><i class="fa-solid fa-scroll"></i> إعلانات</span>
+                    <i class="fa-solid fa-chevron-left"></i>
+                </li>
+                <li class="nav-item" onclick="switchSection('admin-forms', this)">
+                    <span><i class="fa-solid fa-file-lines"></i> نماذج إدارية</span>
+                    <i class="fa-solid fa-chevron-left"></i>
+                </li>
+                <li class="nav-item" id="adminNavItem" onclick="handleDesignerAuthClick()" style="border-top: 1px dashed #cbd5e1; margin-top: 8px; padding-top: 14px;">
+                    <span><i class="fa-solid fa-user-lock"></i> <span id="authBtnText">دخول الإدارة</span></span>
+                    <i class="fa-solid fa-chevron-left"></i>
+                </li>
+            </ul>
+
+            <div class="extra-links">
+                <!-- رابط مباشر يفتح لائحة الثانوية -->
+                <button class="extra-btn" style="background: linear-gradient(135deg, #1e3a8a, #0284c7);" onclick="switchSection('highschool-bylaw', null)">
+                    <i class="fa-solid fa-graduation-cap"></i> لائحة المرحلة الثانوية (شاملة)
+                </button>
+
+                <!-- يفتح صفحة تصفح اللائحة بالأبواب مع كلمة الوزير أولاً ورابط لكل باب على صفحته بالضبط -->
+                <button class="extra-btn" onclick="switchSection('bylaw', null)">
+                    <i class="fa-solid fa-book-bookmark"></i> اللائحة التنفيذية 2026 (كاملة)
+                </button>
+
+                <!-- رابط مباشر لملف الـ PDF الخام إن احتاجت فتحه كاملاً بدون تصفح الأبواب -->
+                <a href="#" id="sidebarBylawLink" target="_blank" class="extra-btn" style="background:#334155;">
+                    <i class="fa-solid fa-file-pdf"></i> فتح ملف اللائحة PDF مباشرة
+                </a>
+                <a href="#" id="sidebarCalendarLink" target="_blank" class="extra-btn" style="background:#0284c7;">
+                    <i class="fa-solid fa-calendar-days"></i> التقويم التربوي 2026/2027
+                </a>
+            </div>
+        </aside>
+
+        <main class="content-area" id="mainContent">
+            <!-- المحتوى الديناميكي -->
+        </main>
+    </div>
+
+    <!-- نافذة دخول الإدارة -->
+    <div class="modal" id="loginModal">
+        <div class="modal-box" style="max-width: 400px;">
+            <span class="close-modal" onclick="closeLoginModal()">&times;</span>
+            <h3 style="margin-bottom: 1rem; color: var(--primary-blue); text-align: center;">
+                <i class="fa-solid fa-lock"></i> تسجيل دخول الإدارة
+            </h3>
+            <form onsubmit="verifyDesignerPassword(event)">
+                <div class="form-group">
+                    <label>كلمة المرور الخاصة بالإدارة</label>
+                    <input type="password" id="designerPasswordInput" placeholder="أدخل كلمة المرور" required>
+                </div>
+                <button type="submit" class="submit-btn"><i class="fa-solid fa-key"></i> تحقق ودخول</button>
+                <p id="loginErrorMsg" style="color: var(--danger-red); font-size: 0.85rem; margin-top: 8px; text-align: center; display: none;">كلمة المرور غير صحيحة!</p>
+            </form>
+        </div>
+    </div>
+
+    <!-- نافذة رفع وتعديل الملفات -->
+    <div class="modal" id="fileModal">
+        <div class="modal-box">
+            <span class="close-modal" onclick="closeFileModal()">&times;</span>
+            <h3 id="modalFileTitle" style="margin-bottom: 1rem; color: var(--primary-blue);">
+                <i class="fa-solid fa-cloud-arrow-up"></i> رفع مستند جديد
+            </h3>
+            <form onsubmit="saveFileSubmit(event)">
+                <input type="hidden" id="editFileId">
+                <div class="form-group">
+                    <label>القسم الرئيسي والفرعي</label>
+                    <select id="fileCategorySelect" required>
+                        <optgroup label="التعاميم">
+                            <option value="circulars-ministerial">تعاميم وزارية</option>
+                            <option value="circulars-internal">تعاميم داخلية</option>
+                        </optgroup>
+                        <optgroup label="النشرات">
+                            <option value="bulletins-external">نشرات خارجية</option>
+                            <option value="bulletins-internal">نشرات داخلية</option>
+                        </optgroup>
+                        <optgroup label="القرارات">
+                            <option value="decisions-ministerial">قرارات وزارية</option>
+                            <option value="decisions-internal">قرارات داخلية</option>
+                        </optgroup>
+                        <optgroup label="جداول الاختبارات">
+                            <option value="exams-short-p1">اختبارات قصيرة - الفصل الدراسي الأول</option>
+                            <option value="exams-short-p2">اختبارات قصيرة - الفصل الدراسي الثاني</option>
+                            <option value="exams-end-p1">اختبارات نهاية الفترة الدراسية الأولى</option>
+                            <option value="exams-end-p2">اختبارات الفترة الدراسية الثانية</option>
+                        </optgroup>
+                        <optgroup label="أقسام أخرى">
+                            <option value="evaluation">آليات</option>
+                            <option value="plans">الخطط الدراسية والإدارية</option>
+                            <option value="class-schedules">جداول الفصول</option>
+                            <option value="announcements">الإعلانات</option>
+                            <option value="admin-forms">نماذج إدارية</option>
+                        </optgroup>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>عنوان المستند / القرار</label>
+                    <input type="text" id="fileTitleInput" placeholder="أدخل عنوان المستند" required>
+                </div>
+                <div class="form-group">
+                    <label>طريقة إضافة الملف</label>
+                    <div style="display:flex; gap:8px; margin-bottom:0.5rem;">
+                        <button type="button" id="modeUploadBtn" class="sub-tab-btn active" style="flex:1;" onclick="setUploadMode('upload')">
+                            <i class="fa-solid fa-upload"></i> رفع من الجهاز (ملفات صغيرة)
+                        </button>
+                        <button type="button" id="modeLinkBtn" class="sub-tab-btn" style="flex:1;" onclick="setUploadMode('link')">
+                            <i class="fa-solid fa-link"></i> رابط خارجي (ملفات كبيرة)
+                        </button>
+                    </div>
+                </div>
+                <div class="form-group" id="uploadModeGroup">
+                    <label>اختر الملف المرفق (PDF أو صورة)</label>
+                    <input type="file" id="fileFileInput" accept=".pdf, image/*">
+                    <p style="font-size:0.78rem; color:var(--text-muted); margin-top:4px;">يُرفع الملف مباشرة إلى التخزين السحابي (Supabase) ويظهر لجميع المستخدمين من أي جهاز فوراً — بدون حد صارم لحجم الملف ضمن سعة المشروع.</p>
+                </div>
+                <div class="form-group" id="linkModeGroup" style="display:none;">
+                    <label>رابط الملف (Google Drive أو أي رابط مباشر)</label>
+                    <input type="url" id="fileLinkInput" placeholder="https://drive.google.com/...">
+                    <p style="font-size:0.78rem; color:var(--text-muted); margin-top:4px;">
+                        بديل اختياري: ارفعي الملف على Google Drive، وخلي المشاركة "أي شخص لديه الرابط يمكنه العرض"، ثم الصقي الرابط هنا.
+                    </p>
+                </div>
+                <button type="submit" class="submit-btn"><i class="fa-solid fa-save"></i> حفظ ونشر فوراً</button>
+                <p id="uploadErrorMsg" style="color: var(--danger-red); font-size: 0.85rem; margin-top: 8px; text-align: center; display: none;"></p>
+            </form>
+        </div>
+    </div>
+
+    <footer>
+        <div class="footer-content">
+            <div class="footer-credits">
+                <p class="footer-credits-title">إعداد وتصميم: <span>أ/ غادة دياب</span> (قسم الحاسوب)</p>
+                <p class="footer-credits-row2">رئيسة القسم: <span>أ/ كوثر بندر</span> &nbsp;|&nbsp; الموجهة الفنية: <span>أ/ وفاء البصيلي</span></p>
+            </div>
+            <p class="footer-copyright">&copy; جميع الحقوق محفوظة لثانوية سلوى - بنات | وزارة التربية</p>
+            <div class="footer-principal">
+                <p class="footer-principal-title">مديرة المدرسة: <span>أ/ شريفة الصقر</span></p>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // ============================================
+        // إعدادات Supabase — عدّلي القيم الثلاث التالية فقط
+        // ============================================
+        const SUPABASE_URL = "https://lsjrjipbwyckxkgsprlq.supabase.co";
+        const SUPABASE_ANON_KEY = "sb_publishable_03d7AKxFRnksbweaBPo8xA__7dQLiiH";
+
+        // روابط الملفين الثابتين (اللائحة والتقويم) بعد رفعهما يدوياً إلى
+        // مجلد التخزين school-files في لوحة Supabase، ولصق الرابط العام لكل منهما هنا
+        const BYLAW_PDF_URL = "https://lsjrjipbwyckxkgsprlq.supabase.co/storage/v1/object/public/school-files/bylaw-2026.pdf";
+        const CALENDAR_PDF_URL = "https://lsjrjipbwyckxkgsprlq.supabase.co/storage/v1/object/public/school-files/calender2026-2027.pdf";
+        // ============================================
+
+        const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        const STORAGE_BUCKET = "school-files";
+
+        const DESIGNER_PASS = "salwa2026"; 
+        let isDesignerLoggedIn = false;
+
+        const FULL_MINISTER_SPEECH = `بسم الله الرحمن الرحيم
+الحمد لله رب العالمين، والصلاة والسلام على أشرف المرسلين سيدنا محمد وعلى آله وصحبه أجمعين.. وبعد،،،
+
+طيب لي أن أتقدم بفائق شكري وعظيم امتناني إلى كل من ساهم في إنجاح هذه اللائحة وترجمة أهدافها النبيلة على أرض الواقع وأخص بالشكر أعضاء الفريق الذي قام مشكورا بصياغة اللائحة.
+
+إن التعليم هو الركيزة الأساسية التي تبنى عليها نهضة الأمم، والاستثمار الأسمى في طاقات البشر وعقولهم. ومن هذا المنطلق الراسخ تضع وزارة التربية نصب عينيها رؤية تعليمية وطنية شاملة ومتكاملة تستهدف بناء متعلم المستقبل وتمكينه بالمهارات والكفايات التي تؤهله للمنافسة العالمية، مع الحفاظ على هويتنا وقيمنا الأصيلة.
+
+إن هذه اللائحة التي بين أيدينا اليوم، لجميع المراحل التعليمية، لا تمثل مجرد مجموعة من القوانين أو الإجراءات الإدارية بل هي دستور تربوي متكامل وإطار تنظيمي شامل يستهدف حوكمة الممارسات التعليمية والإدارية داخل مؤسساتنا التربوية. لقد حرصنا في صياغة هذه اللائحة وبأبوابها المتعددة على إرساء بيئة تعليمية آمنة مستقرة، ومحفزة على الإبداع، تقوم على مبادئ العدالة الشفافية، وتكافؤ الفرص.
+
+إن تنظيم عمل المتعلم وضبط مسيرته الدراسية من خلال أبواب واضحة ومحددة إلى جانب الرعاية الطلابية المتكاملة، هو الضمانة الحقيقية لحماية حقوق المتعلم وتحديد واجباته. ويدعم العمل المؤسسي المشترك، ويحقق أعلى مستويات الجودة والرقابة الذاتية.
+
+إننا نؤمن بأن الإصلاح التربوي المنشود لا يمكن أن يتحقق بجهد فردي، بل هو نتاج عمل تشاركي مستدام تشترك فيه الوزارة مع الميدان التربوي وأولياء الأمور والمجتمع بكافة مؤسساته. لذا، فإننا ندعو الجميع قيادات ومعلمين ومتعلمين وأولياء أمور إلى الالتزام التام بنصوص هذه اللائحة، والعمل بروح الفريق الواحد لترسيخ قيم الانضباط والمسؤولية، والارتقاء بمخرجاتنا التعليمية لتواكب تطلعات وطننا العزيز نحو مستقبل مشرق ومستدام.
+
+وفقنا الله جميعاً لما فيه خير ومصلحة أبنائنا وبناتنا، وحفظ الله كويتنا الغالية منارة للعلم والعلماء.
+والسلام عليكم ورحمة الله وبركاته...
+
+المهندس / سيد جلال الطبطبائي
+وزير التربية`;
+
+        const BYLAW_CHAPTERS = [
+            { id: 1, title: "الباب الأول: التربية الوطنية واحترام العلم ورموز الدولة، والتعاريف العامة الحاكمة", pages: "الصفحات 11 - 24", desc: "يتناول أعلاء أهداف التربية الوطنية، وضوابط العلم الوطني، واحترام رمزي الدولة، والتعاريف العامة الحاكمة للائحة.", startPage: 11 },
+            { id: 2, title: "الباب الثاني: مرحلة رياض الأطفال", pages: "الصفحات 25 - 55", desc: "الأهداف التربوية، وخصائص النمو، والإطار التنظيمي للقبول، والتقويم، والغياب، ولائحة النظام والتعليم عن بعد.", startPage: 25 },
+            { id: 3, title: "الباب الثالث: إجراءات عامة للمراحل التعليمية", pages: "الصفحات 56 - 78", desc: "تقسيم العام الدراسي، وقواعد الغياب، والإعفاءات، وشطب وإعادة القيد، وضوابط الامتحانات والدور الثاني، ومعدلات الأنصبة.", startPage: 56 },
+            { id: 4, title: "الباب الرابع: الأحكام الخاصة بالمرحلة الابتدائية", pages: "الصفحات 79 - 103", desc: "أهداف المرحلة، الخطة الدراسية، آلية توزيع الدرجات والأعمال، أدوات التقويم، وضوابط المشاريع ومخالفات الامتحانات.", startPage: 79 },
+            { id: 5, title: "الباب الخامس: الأحكام الخاصة بالمرحلة المتوسطة", pages: "الصفحات 104 - 121", desc: "خصائص المرحلة، نظام النقاط الرقمية (GPA)، توزيع درجات الأعمال، قواعد المشاريع والغياب والمراجعة النهائية.", startPage: 104 },
+            { id: 6, title: "الباب السادس: الأحكام الخاصة بالمرحلة الثانوية", pages: "الصفحات 122 - 134", desc: "خصائص المرحلة الثانوية، تفصيل الدرجات، المعدل التراكمي، أنصبة المواد، وقواعد المشاريع والغياب.", startPage: 122 },
+            { id: 7, title: "الباب السابع: الأحكام العامة والخاصة بالتعليم الديني", pages: "الصفحات 135 - 154", desc: "شروط وضوابط القبول والتسجيل للمعاهد الدينية بمراحلها (ابتدائي - متوسط - ثانوي) وطلاب المنح الدراسية.", startPage: 135 },
+            { id: 8, title: "الباب الثامن: ضوابط التسجيل والمعادلات والفئات المستثناة ونقل المتعلمين", pages: "الصفحات 155 - 167", desc: "شروط قبول غير الكويتيين، ذوي الإعاقة، سلم الأعمار، التحويل بين التعليم العام والديني والخاص، وإعادة الثانوية (تحسين نسبة).", startPage: 155 },
+            { id: 9, title: "الباب التاسع: النظام المدرسي (المخالفات السلوكية لجميع المراحل)", pages: "الصفحات 168 - 188", desc: "تصنيف السلوك المخالف (بسيط - متوسط - شديد - جسيم)، الإجراءات التصحيحية، والتعامل مع حالات الحيازة والتعاطي.", startPage: 168 },
+            { id: 10, title: "الباب العاشر: الدور التكاملي للخدمة الاجتماعية والنفسية", pages: "الصفحات 189 - 200", desc: "الدور الوقائي والإنمائي، نصاب الباحث الاجتماعي والنفسي، ومهام لجنة الحالات الخاصة لصعوبات التعلم والصحة.", startPage: 189 },
+            { id: 11, title: "الباب الحادي عشر: حوكمة العمل الإداري والتربوي في المجتمع المدرسي", pages: "الصفحات 201 - 214", desc: "الإطار التنظيمي للمجالس واللجان الدائمة والمؤقتة وفرق العمل المدرسية وضوابط التفتيش.", startPage: 201 },
+            { id: 12, title: "الباب الثاني عشر: الأنشطة المدرسية", pages: "الصفحات 215 - 220", desc: "استراتيجيات الإدارة المدرسية في تفعيل الأنشطة، ضوابط الاحتفالات والرحلات المدرسية والوجبات الغذائية.", startPage: 215 },
+            { id: 13, title: "الباب الثالث عشر: الإعلام المدرسي", pages: "الصفحات 221 - 227", desc: "الرؤية والأهداف الاستراتيجية للإعلام المدرسي، ضوابط المحتوى الإعلامي، ومهام الفريق الإعلامي بالمدرسة.", startPage: 221 },
+            { id: 14, title: "الباب الرابع عشر: التعليم عن بعد", pages: "الصفحات 228 - 231", desc: "التزامات الإدارة المدرسية والهيئة التعليمية تجاه المنصة التعليمية الرقمية ضوابط استخدام الحسابات الرسمية.", startPage: 228 },
+            { id: 15, title: "الباب الخامس عشر: معايير القاعة الدراسية", pages: "الصفحات 232 - 237", desc: "مفهوم القاعة الدراسية والبيئة التعليمية، الكثافة الطلابية، والمواصفات المعتمدة للبيئة الصفية.", startPage: 232 },
+            { id: 16, title: "الباب السادس عشر: الزي المدرسي والمظهر العام", pages: "الصفحات 238 - 246", desc: "ضوابط الزي المدرسي الموحد للطلبة، وضوابط المظهر والزي المعلم والإداريين وموظفي الخدمات.", startPage: 238 },
+            { id: 17, title: "الباب السابع عشر: التسجيل في مراكز تعليم الكبار ومحو الأمية والمنازل", pages: "الصفحات 247 - 258", desc: "آلية القبول في المراكز المسائية ومحو الأمية، توزيع درجات المسائي، ونظام تسجيل المنازل وإعادة الثانوية.", startPage: 247 },
+            { id: 18, title: "الباب الثامن عشر: إدارة الامتحانات", pages: "الصفحات 259 - 269", desc: "المفهوم العام للكنترول، اختصاصات غرفة الكنترول الغرفة السرية، وضوابط تقديم التظلمات.", startPage: 259 },
+            { id: 19, title: "الباب التاسع عشر: لائحة الامتحانات", pages: "الصفحات 270 - 279", desc: "نص القرار رقم (2) لسنة 2018م بشأن المخالفات والإجراءات المتبعة في لائحة الامتحانات.", startPage: 270 },
+            { id: 20, title: "الباب العشرون: مدونة السلوك التعليمي والانضباط المهني ومعايير التكريم", pages: "الصفحات 280 - 294", desc: "أخلاقيات المنهج والمهنة، الحوكمة، ومعايير الترشيح لتكريم المعلم في اليوم العالمي للمعلم.", startPage: 280 },
+            { id: 21, title: "الباب الحادي والعشرون: مخالفات الهيئة التعليمية والإدارية وأنواع الإجازات", pages: "الصفحات 295 - 306", desc: "المخالفات الإدارية، أنواع الإجازات وشروطها وفق ديوان الخدمة المدنية، التخفيف، التكليف، والاستئذان.", startPage: 295 },
+            { id: 22, title: "الباب الثاني والعشرون: نماذج والقرارات واللوائح ذات الصلة والمرتكزات الختامية", pages: "الصفحات 307 - 318", desc: "النماذج المعتمدة والقرارات واللوائح الصادرة المكملة لأحكام اللائحة الشاملة.", startPage: 307 }
+        ];
+
+        const ALL_CATEGORIES = ['circulars-ministerial','circulars-internal','bulletins-external','bulletins-internal',
+         'decisions-ministerial','decisions-internal','evaluation','plans','exams-short-p1',
+         'exams-short-p2','exams-end-p1','exams-end-p2','class-schedules','announcements',
+         'admin-forms'];
+
+        let db = {};
+        ALL_CATEGORIES.forEach(k => { db[k] = []; });
+
+        let currentSection = 'home';
+        let currentSubTabKey = 'circulars-ministerial';
+
+        window.onload = function() {
+            document.getElementById('sidebarBylawLink').href = BYLAW_PDF_URL;
+            document.getElementById('sidebarCalendarLink').href = CALENDAR_PDF_URL;
+            loadAllDocumentsFromSupabase().then(() => {
+                renderSection('home');
+            });
+            initRealtimeSync();
+            registerServiceWorkerAndCheckPush();
+        };
+
+        // ============================================
+        // تطبيق الويب التقدمي (PWA) والتنبيهات الفورية (Push Notifications)
+        // ============================================
+        const VAPID_PUBLIC_KEY = "BIm5TaZ1MwR6k-BeufWacgqJTPbeS0NctMXa-3KeGC9ZIG4K9hNJYCCszA9gLnwX-t1mPZw0UQniZ2-7tAW6Enw";
+
+        function urlBase64ToUint8Array(base64String) {
+            const padding = '='.repeat((4 - base64String.length % 4) % 4);
+            const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+            const rawData = window.atob(base64);
+            const outputArray = new Uint8Array(rawData.length);
+            for (let i = 0; i < rawData.length; ++i) {
+                outputArray[i] = rawData.charCodeAt(i);
+            }
+            return outputArray;
+        }
+
+        async function registerServiceWorkerAndCheckPush() {
+            if (!('serviceWorker' in navigator)) return;
+            try {
+                const reg = await navigator.serviceWorker.register('sw.js');
+                if ('PushManager' in window && 'Notification' in window && Notification.permission === 'granted') {
+                    const existing = await reg.pushManager.getSubscription();
+                    if (!existing) {
+                        await subscribeToPush(reg);
+                    }
+                }
+            } catch (e) {
+                console.error('تعذّر تسجيل Service Worker:', e);
+            }
+            updateNotifyButtonUI();
+        }
+
+        async function subscribeToPush(reg) {
+            const subscription = await reg.pushManager.subscribe({
+                userVisibleOnly: true,
+                applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
+            });
+            const subJson = subscription.toJSON();
+            const { error } = await supabaseClient.from('push_subscriptions').upsert({
+                endpoint: subJson.endpoint,
+                p256dh: subJson.keys.p256dh,
+                auth: subJson.keys.auth
+            }, { onConflict: 'endpoint' });
+            if (error) console.error('تعذّر حفظ اشتراك التنبيهات:', error);
+        }
+
+        async function enableNotificationsClick() {
+            if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
+                alert('عذراً، متصفحك الحالي لا يدعم التنبيهات.\n\nعلى آيفون: أضيفي الموقع للشاشة الرئيسية أولاً (زر المشاركة ← "إضافة إلى الشاشة الرئيسية")، ثم افتحي التطبيق من الأيقونة وأعيدي المحاولة من هناك (يتطلب iOS 16.4 فأحدث).');
+                return;
+            }
+            try {
+                const permission = await Notification.requestPermission();
+                if (permission !== 'granted') {
+                    alert('لم يتم منح إذن التنبيهات. يمكنك تفعيلها لاحقاً من إعدادات المتصفح لهذا الموقع.');
+                    return;
+                }
+                const reg = await navigator.serviceWorker.ready;
+                await subscribeToPush(reg);
+                updateNotifyButtonUI();
+                alert('تم تفعيل التنبيهات بنجاح! ستصلك إشعارات فورية عند إضافة أي مستند جديد، حتى لو كان التطبيق مغلقاً.');
+            } catch (e) {
+                console.error(e);
+                alert('حدث خطأ أثناء تفعيل التنبيهات، حاولي مرة أخرى.');
+            }
+        }
+
+        function updateNotifyButtonUI() {
+            const btn = document.getElementById('notifyBtn');
+            if (!btn) return;
+            if ('Notification' in window && Notification.permission === 'granted') {
+                btn.innerHTML = '<i class="fa-solid fa-bell"></i> التنبيهات مُفعّلة';
+                btn.classList.add('notify-active');
+            } else {
+                btn.innerHTML = '<i class="fa-solid fa-bell"></i> تفعيل التنبيهات';
+                btn.classList.remove('notify-active');
+            }
+        }
+
+        // تحميل كل المستندات من جدول documents في Supabase وتوزيعها على الأقسام
+        async function loadAllDocumentsFromSupabase() {
+            const { data, error } = await supabaseClient
+                .from('documents')
+                .select('*')
+                .order('created_at', { ascending: false });
+
+            if (error) {
+                console.error('خطأ في تحميل المستندات:', error);
+                alert('تعذّر الاتصال بقاعدة البيانات. تأكدي من صحة رابط ومفتاح Supabase في أعلى الكود.');
+                return;
+            }
+
+            ALL_CATEGORIES.forEach(k => { db[k] = []; });
+            (data || []).forEach(row => {
+                if (!db[row.category]) db[row.category] = [];
+                db[row.category].push({
+                    id: row.id,
+                    title: row.title,
+                    url: row.file_url,
+                    storage_path: row.storage_path,
+                    date: row.created_at ? row.created_at.split('T')[0] : ''
+                });
+            });
+        }
+
+        // الاشتراك في التحديثات الفورية: أي إضافة/تعديل/حذف من أي جهاز يظهر لحظياً هنا
+        function initRealtimeSync() {
+            supabaseClient
+                .channel('documents-changes')
+                .on('postgres_changes', { event: '*', schema: 'public', table: 'documents' }, async () => {
+                    await loadAllDocumentsFromSupabase();
+                    renderSection(currentSection);
+                })
+                .subscribe();
+        }
+
+        function notifyDataChanged() {
+            // إعادة رسم فورية محلياً؛ الاشتراك الفوري (realtime) سيُحدّث بقية الأجهزة تلقائياً
+            renderSection(currentSection);
+        }
+
+        function handleDesignerAuthClick() {
+            if (isDesignerLoggedIn) {
+                openFileModal();
+            } else {
+                document.getElementById('loginModal').style.display = 'flex';
+            }
+        }
+
+        function verifyDesignerPassword(e) {
+            e.preventDefault();
+            const pass = document.getElementById('designerPasswordInput').value;
+            if (pass === DESIGNER_PASS) {
+                isDesignerLoggedIn = true;
+                document.getElementById('loginModal').style.display = 'none';
+                document.getElementById('designerPasswordInput').value = '';
+                document.getElementById('loginErrorMsg').style.display = 'none';
+                
+                document.getElementById('authBtnText').innerText = "إضافة / رفع ملفات";
+                document.getElementById('adminStatusBar').style.display = 'flex';
+                
+                renderSection(currentSection);
+            } else {
+                document.getElementById('loginErrorMsg').style.display = 'block';
+            }
+        }
+
+        function logoutDesigner() {
+            isDesignerLoggedIn = false;
+            document.getElementById('authBtnText').innerText = "دخول الإدارة";
+            document.getElementById('adminStatusBar').style.display = 'none';
+            renderSection(currentSection);
+        }
+
+        function closeLoginModal() {
+            document.getElementById('loginModal').style.display = 'none';
+            document.getElementById('loginErrorMsg').style.display = 'none';
+        }
+
+        function toggleMobileSidebar(forceState) {
+            const sidebar = document.getElementById('mainSidebar');
+            const overlay = document.getElementById('sidebarOverlay');
+            const shouldOpen = typeof forceState === 'boolean' ? forceState : !sidebar.classList.contains('mobile-open');
+            sidebar.classList.toggle('mobile-open', shouldOpen);
+            overlay.classList.toggle('active', shouldOpen);
+        }
+
+        function switchSection(secKey, el) {
+            currentSection = secKey;
+            if (el) {
+                document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+                el.classList.add('active');
+            }
+            renderSection(secKey);
+            // إغلاق القائمة الجانبية تلقائياً على الجوال بعد اختيار قسم
+            if (window.innerWidth <= 992) {
+                toggleMobileSidebar(false);
+            }
+        }
+
+        function renderSection(secKey) {
+            const main = document.getElementById('mainContent');
+
+            if (secKey === 'home') {
+                main.innerHTML = `
+                    <div class="welcome-hero">
+                        <i class="fa-solid fa-hand-sparkles welcome-icon"></i>
+                        <h2>مرحباً بكِ في بوابة التعاميم</h2>
+                        <p>ثانوية سلوى - بنات</p>
+                        <p class="welcome-sub">اختاري القسم المطلوب من القائمة الجانبية للاطلاع على التعاميم والنشرات والقرارات وجميع المستندات الرسمية.</p>
+                    </div>
+                    <div class="welcome-quick-grid">
+                        <div class="welcome-quick-card" onclick="switchSection('circulars', document.querySelectorAll('.nav-item')[0])">
+                            <i class="fa-solid fa-file-signature"></i><span>تعاميم</span>
+                        </div>
+                        <div class="welcome-quick-card" onclick="switchSection('bulletins', document.querySelectorAll('.nav-item')[1])">
+                            <i class="fa-solid fa-bullhorn"></i><span>نشرات</span>
+                        </div>
+                        <div class="welcome-quick-card" onclick="switchSection('decisions', document.querySelectorAll('.nav-item')[2])">
+                            <i class="fa-solid fa-gavel"></i><span>قرارات</span>
+                        </div>
+                        <div class="welcome-quick-card" onclick="switchSection('exam-schedules', document.querySelectorAll('.nav-item')[5])">
+                            <i class="fa-solid fa-calendar-check"></i><span>جداول الاختبارات</span>
+                        </div>
+                        <div class="welcome-quick-card" onclick="switchSection('announcements', document.querySelectorAll('.nav-item')[7])">
+                            <i class="fa-solid fa-scroll"></i><span>إعلانات</span>
+                        </div>
+                        <div class="welcome-quick-card" onclick="switchSection('admin-forms', document.querySelectorAll('.nav-item')[8])">
+                            <i class="fa-solid fa-file-lines"></i><span>نماذج إدارية</span>
+                        </div>
+                    </div>
+                `;
+            } else if (secKey === 'circulars') {
+                currentSubTabKey = 'circulars-ministerial';
+                main.innerHTML = `
+                    <div class="section-header">
+                        <h2><i class="fa-solid fa-file-signature"></i> قسم التعاميم</h2>
+                        ${isDesignerLoggedIn ? `<button class="designer-btn" onclick="openFileModal('circulars-ministerial')"><i class="fa-solid fa-plus"></i> إضافة تعميم</button>` : ''}
+                    </div>
+                    <div class="sub-tabs">
+                        <button class="sub-tab-btn active" onclick="switchSubCategory('circulars-ministerial', this)">تعاميم وزارية</button>
+                        <button class="sub-tab-btn" onclick="switchSubCategory('circulars-internal', this)">تعاميم داخلية</button>
+                    </div>
+                    <div class="files-grid" id="filesGrid">${renderFilesList(currentSubTabKey)}</div>
+                `;
+            } else if (secKey === 'bulletins') {
+                currentSubTabKey = 'bulletins-external';
+                main.innerHTML = `
+                    <div class="section-header">
+                        <h2><i class="fa-solid fa-bullhorn"></i> قسم النشرات</h2>
+                        ${isDesignerLoggedIn ? `<button class="designer-btn" onclick="openFileModal('bulletins-external')"><i class="fa-solid fa-plus"></i> إضافة نشرة</button>` : ''}
+                    </div>
+                    <div class="sub-tabs">
+                        <button class="sub-tab-btn active" onclick="switchSubCategory('bulletins-external', this)">نشرات خارجية</button>
+                        <button class="sub-tab-btn" onclick="switchSubCategory('bulletins-internal', this)">نشرات داخلية</button>
+                    </div>
+                    <div class="files-grid" id="filesGrid">${renderFilesList(currentSubTabKey)}</div>
+                `;
+            } else if (secKey === 'decisions') {
+                currentSubTabKey = 'decisions-ministerial';
+                main.innerHTML = `
+                    <div class="section-header">
+                        <h2><i class="fa-solid fa-gavel"></i> قسم القرارات</h2>
+                        ${isDesignerLoggedIn ? `<button class="designer-btn" onclick="openFileModal('decisions-ministerial')"><i class="fa-solid fa-plus"></i> إضافة قرار</button>` : ''}
+                    </div>
+                    <div class="sub-tabs">
+                        <button class="sub-tab-btn active" onclick="switchSubCategory('decisions-ministerial', this)">قرارات وزارية</button>
+                        <button class="sub-tab-btn" onclick="switchSubCategory('decisions-internal', this)">قرارات داخلية</button>
+                    </div>
+                    <div class="files-grid" id="filesGrid">${renderFilesList(currentSubTabKey)}</div>
+                `;
+            } else if (secKey === 'exam-schedules') {
+                currentSubTabKey = 'exams-short-p1';
+                main.innerHTML = `
+                    <div class="section-header">
+                        <h2><i class="fa-solid fa-calendar-check"></i> جداول الاختبارات</h2>
+                        ${isDesignerLoggedIn ? `<button class="designer-btn" onclick="openFileModal('exams-short-p1')"><i class="fa-solid fa-plus"></i> إضافة جدول اختبار</button>` : ''}
+                    </div>
+                    <div class="sub-tabs">
+                        <button class="sub-tab-btn active" onclick="switchSubCategory('exams-short-p1', this)">اختبارات قصيرة (الفصل الأول)</button>
+                        <button class="sub-tab-btn" onclick="switchSubCategory('exams-short-p2', this)">اختبارات قصيرة (الفصل الثاني)</button>
+                        <button class="sub-tab-btn" onclick="switchSubCategory('exams-end-p1', this)">نهاية الفترة الدراسية الأولى</button>
+                        <button class="sub-tab-btn" onclick="switchSubCategory('exams-end-p2', this)">اختبارات الفترة الدراسية الثانية</button>
+                    </div>
+                    <div class="files-grid" id="filesGrid">${renderFilesList(currentSubTabKey)}</div>
+                `;
+            } else if (secKey === 'evaluation') {
+                currentSubTabKey = 'evaluation';
+                main.innerHTML = `
+                    <div class="section-header">
+                        <h2><i class="fa-solid fa-chart-line"></i> قسم الآليات</h2>
+                        ${isDesignerLoggedIn ? `<button class="designer-btn" onclick="openFileModal('evaluation')"><i class="fa-solid fa-plus"></i> إضافة آلية جديدة</button>` : ''}
+                    </div>
+                    <div class="files-grid" id="filesGrid">${renderFilesList('evaluation')}</div>
+                `;
+            } else if (secKey === 'plans') {
+                currentSubTabKey = 'plans';
+                main.innerHTML = `
+                    <div class="section-header">
+                        <h2><i class="fa-solid fa-map-location-dot"></i> الخطط المدرسية</h2>
+                        ${isDesignerLoggedIn ? `<button class="designer-btn" onclick="openFileModal('plans')"><i class="fa-solid fa-plus"></i> إضافة خطة</button>` : ''}
+                    </div>
+                    <div class="files-grid" id="filesGrid">${renderFilesList('plans')}</div>
+                `;
+            } else if (secKey === 'class-schedules') {
+                currentSubTabKey = 'class-schedules';
+                main.innerHTML = `
+                    <div class="section-header">
+                        <h2><i class="fa-solid fa-table-cells"></i> جداول الفصول</h2>
+                        ${isDesignerLoggedIn ? `<button class="designer-btn" onclick="openFileModal('class-schedules')"><i class="fa-solid fa-plus"></i> إضافة جدول صف</button>` : ''}
+                    </div>
+                    <div class="files-grid" id="filesGrid">${renderFilesList('class-schedules')}</div>
+                `;
+            } else if (secKey === 'announcements') {
+                currentSubTabKey = 'announcements';
+                main.innerHTML = `
+                    <div class="section-header">
+                        <h2><i class="fa-solid fa-scroll"></i> الإعلانات الرسمية</h2>
+                        ${isDesignerLoggedIn ? `<button class="designer-btn" onclick="openFileModal('announcements')"><i class="fa-solid fa-plus"></i> إضافة إعلان</button>` : ''}
+                    </div>
+                    <div class="files-grid" id="filesGrid">${renderFilesList('announcements')}</div>
+                `;
+            } else if (secKey === 'highschool-bylaw') {
+                renderHighSchoolBylawSection(main);
+            } else if (secKey === 'bylaw') {
+                renderBylawSection(main);
+            } else if (secKey === 'admin-forms') {
+                currentSubTabKey = 'admin-forms';
+                main.innerHTML = `
+                    <div class="section-header">
+                        <h2><i class="fa-solid fa-file-lines"></i> النماذج الإدارية</h2>
+                        ${isDesignerLoggedIn ? `<button class="designer-btn" onclick="openFileModal('admin-forms')"><i class="fa-solid fa-plus"></i> إضافة نموذج</button>` : ''}
+                    </div>
+                    <div class="files-grid" id="filesGrid">${renderFilesList('admin-forms')}</div>
+                `;
+            }
+        }
+
+        function switchSubCategory(catKey, btn) {
+            currentSubTabKey = catKey;
+            document.querySelectorAll('.sub-tab-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            document.getElementById('filesGrid').innerHTML = renderFilesList(catKey);
+        }
+
+        function renderHighSchoolBylawSection(container) {
+            container.innerHTML = `
+                <div class="section-header">
+                    <h2><i class="fa-solid fa-graduation-cap"></i> اللائحة التنفيذية الشاملة للمرحلة الثانوية (2026)</h2>
+                    <a href="${BYLAW_PDF_URL}#page=122" target="_blank" class="btn-action btn-view" style="padding: 0.6rem 1.2rem; font-size:0.9rem; text-decoration:none;">
+                        <i class="fa-solid fa-file-pdf"></i> فتح الباب السادس مباشرة (PDF ص 122)
+                    </a>
+                </div>
+
+                <div class="info-box">
+                    <h3><i class="fa-solid fa-user-graduate"></i> أولاً: خصائص المتعلمين والتوجيهات التربوية (الباب السادس ص 124-125)</h3>
+                    <p style="margin-bottom: 0.8rem; font-size: 0.92rem; color: var(--text-muted);">
+                        تجسد المرحلة الثانوية (من عمر 15 - 18 سنة) مرحلة حاسمة في بناء شخصية المتعلم وتكامل النمو الجسدي والعقلي والانفعالي والاجتماعي.
+                    </p>
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1rem;">
+                        <div style="background:#f8fafc; border:1px solid #cbd5e1; border-radius:8px; padding:1rem;">
+                            <h4 style="color:var(--primary-blue); margin-bottom:0.5rem;"><i class="fa-solid fa-venus"></i> خصائص متعلمات المرحلة الثانوية (البنات)</h4>
+                            <ul class="hs-list">
+                                <li>نضج انفعالي وسريع نسبيًا مقارنة بالبنين.</li>
+                                <li>حساسية عالية للملاحظات اللفظية والعدالة والتوجيه التربوي.</li>
+                                <li>اهتمام كبير بالمظهر العام والعلاقات الاجتماعية مع الأقران.</li>
+                                <li>التزام أكبر بالنظام المدرسي مع وجود قدرة أفضل على التعبير.</li>
+                            </ul>
+                        </div>
+                        <div style="background:#f8fafc; border:1px solid #cbd5e1; border-radius:8px; padding:1rem;">
+                            <h4 style="color:var(--primary-blue); margin-bottom:0.5rem;"><i class="fa-solid fa-chalkboard-user"></i> التوجيهات التربوية للهيئة التعليمية</h4>
+                            <ul class="hs-list">
+                                <li>تعزيز الثقة بالنفس وتنمية مهارات اتخاذ القرار والحوار التربوي.</li>
+                                <li>مراعاة الحساسية النفسية والحرص على النصح والتوجيه الفردي.</li>
+                                <li>إشراك المتعلمات في الأنشطة المدرسية والقيادية.</li>
+                                <li>الابتعاد التام عن المقارنات السلبية أو النقد العلني أمام الزميلات.</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="info-box">
+                    <h3><i class="fa-solid fa-calculator"></i> ثانياً: نظام تفصيل الدرجات ونظام النقاط الرقمية GPA (الباب السادس ص 126-127)</h3>
+                    <p style="font-size: 0.92rem; line-height: 1.6;">
+                        يُطبق في المرحلة الثانوية <b>نظام النقاط الرقمية والوصف اللفظي (GPA)</b>، حيث تُحول درجات المواد إلى نقاط وتُحتسب بناءً على الوزن النسبي لكل مادة لجميع الصفوف (العاشر، الحادي عشر، الثاني عشر).
+                    </p>
+                    
+                    <table class="styled-table">
+                        <thead>
+                            <tr>
+                                <th>الدرجة</th>
+                                <th>التصنيف</th>
+                                <th>التقدير التحصيلي</th>
+                                <th>النقاط (GPA)</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr><td>97 - 100</td><td>A+</td><td>ممتاز مرتفع</td><td>4.00</td></tr>
+                            <tr><td>94 - 96</td><td>A</td><td>ممتاز</td><td>3.80</td></tr>
+                            <tr><td>90 - 93</td><td>A-</td><td>ممتاز منخفض</td><td>3.65</td></tr>
+                            <tr><td>87 - 89</td><td>B+</td><td>جيد جداً مرتفع</td><td>3.45</td></tr>
+                            <tr><td>84 - 86</td><td>B</td><td>جيد جداً</td><td>3.30</td></tr>
+                            <tr><td>83 - 80</td><td>B-</td><td>جيد جداً منخفض</td><td>3.15</td></tr>
+                            <tr><td>77 - 79</td><td>C+</td><td>جيد مرتفع</td><td>2.95</td></tr>
+                            <tr><td>74 - 76</td><td>C</td><td>جيد</td><td>2.80</td></tr>
+                            <tr><td>70 - 73</td><td>C-</td><td>جيد منخفض</td><td>2.65</td></tr>
+                            <tr><td>67 - 69</td><td>D+</td><td>مقبول مرتفع</td><td>2.45</td></tr>
+                            <tr><td>64 - 66</td><td>D</td><td>مقبول</td><td>2.30</td></tr>
+                            <tr><td>60 - 63</td><td>D-</td><td>مقبول منخفض</td><td>2.15</td></tr>
+                            <tr><td>50 - 59</td><td>E</td><td>مجتاز / ناجح</td><td>1.95</td></tr>
+                            <tr><td>0 - 49</td><td>F</td><td>راسب</td><td>0.00</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="info-box">
+                    <h3><i class="fa-solid fa-list-check"></i> ثالثاً: توزيع درجات الأعمال والامتحانات والمشاريع (الباب السادس ص 128-130)</h3>
+                    <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap:1rem;">
+                        <div>
+                            <h4 style="color:var(--bright-blue); margin-bottom:0.5rem;">المواد النظرية (60 درجة امتحان + 40 درجة أعمال)</h4>
+                            <table class="styled-table">
+                                <tr><th>البند</th><th>التفصيل / الدرجة</th></tr>
+                                <tr><td>الاختبارات القصيرة والمشاريع</td><td>20 درجة</td></tr>
+                                <tr><td>السلوك والتفاعل مع الأدوات</td><td>20 درجة</td></tr>
+                                <tr><td>المشاركة والتفاعل الصفى</td><td>60 درجة</td></tr>
+                                <tr><td><b>إجمالي الأعمال اليومية</b></td><td><b>40% (تُحول إلى 100)</b></td></tr>
+                                <tr><td><b>امتحان نهاية الفصل</b></td><td><b>60%</b></td></tr>
+                            </table>
+                        </div>
+                        <div>
+                            <h4 style="color:var(--bright-blue); margin-bottom:0.5rem;">المواد العملية (المعلوماتية، البدنية، الاختياري الحر)</h4>
+                            <table class="styled-table">
+                                <tr><th>البند</th><th>التفصيل / الدرجة</th></tr>
+                                <tr><td>المشاركة والتفاعل</td><td>7 درجات</td></tr>
+                                <tr><td>الواجبات والمهام</td><td>6 درجات</td></tr>
+                                <tr><td>السلوك والأدوات</td><td>6 درجات</td></tr>
+                                <tr><td>المشاريع والتطبيقات العملية</td><td>6 درجات</td></tr>
+                                <tr><td><b>إجمالي درجة الأعمال</b></td><td><b>25 درجة (25%)</b></td></tr>
+                                <tr><td><b>الاختبار العملي النهائي</b></td><td><b>75 درجة (75%)</b></td></tr>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="info-box">
+                    <h3><i class="fa-solid fa-clock"></i> رابعاً: جدول الخطة الدراسية والأوزان النسبية وزمن الامتحانات (ص 132)</h3>
+                    <div style="overflow-x:auto;">
+                        <table class="styled-table" style="min-width:700px;">
+                            <thead>
+                                <tr>
+                                    <th>المجال الدراسي</th>
+                                    <th>الصف العاشر</th>
+                                    <th>11 علمي</th>
+                                    <th>11 أدبي</th>
+                                    <th>12 علمي</th>
+                                    <th>12 أدبي</th>
+                                    <th>زمن الامتحان</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr><td>القرآن الكريم</td><td>1 حصة / 20%</td><td>1 حصة / 20%</td><td>1 حصة / 20%</td><td>1 حصة / 20%</td><td>1 حصة / 20%</td><td>ساعة واحدة (خارج الجدول)</td></tr>
+                                <tr><td>التربية الإسلامية</td><td>2 حصة / 40%</td><td>2 حصة / 40%</td><td>2 حصة / 40%</td><td>2 حصة / 40%</td><td>2 حصة / 40%</td><td>ساعتان</td></tr>
+                                <tr><td>اللغة العربية</td><td>6 حصص / 60%</td><td>6 حصص / 80%</td><td>6 حصص / 80%</td><td>6 حصص / 80%</td><td>6 حصص / 80%</td><td>ساعتان وخمس وأربعون دقيقة</td></tr>
+                                <tr><td>اللغة الإنجليزية</td><td>5 حصص / 60%</td><td>5 حصص / 80%</td><td>6 حصص / 80%</td><td>5 حصص / 80%</td><td>5 حصص / 80%</td><td>3 ساعات</td></tr>
+                                <tr><td>الرياضيات</td><td>6 حصص / 80%</td><td>6 حصص / 100%</td><td>-</td><td>6 حصص / 100%</td><td>-</td><td>ساعتان ونصف</td></tr>
+                                <tr><td>الفيزياء</td><td>3 حصص / 60%</td><td>3 حصص / 80%</td><td>-</td><td>3 حصص / 80%</td><td>-</td><td>ساعتان</td></tr>
+                                <tr><td>الكيمياء</td><td>3 حصص / 60%</td><td>3 حصص / 80%</td><td>-</td><td>3 حصص / 80%</td><td>-</td><td>ساعتان</td></tr>
+                                <tr><td>الأحياء</td><td>3 حصص / 60%</td><td>3 حصص / 80%</td><td>-</td><td>2 حصة / 60%</td><td>-</td><td>ساعتان</td></tr>
+                                <tr><td>التاريخ</td><td>-</td><td>-</td><td>3 حصص / 60%</td><td>-</td><td>3 حصص / 80%</td><td>ساعتان / 3 ساعات (لـ12)</td></tr>
+                                <tr><td>الجغرافيا</td><td>-</td><td>-</td><td>3 حصص / 80%</td><td>-</td><td>3 حصص / 80%</td><td>سادتان ونصف / 3 ساعات</td></tr>
+                                <tr><td>الفلسفة والمنطق</td><td>-</td><td>-</td><td>3 حصص / 60%</td><td>-</td><td>3 حصص / 80%</td><td>ساعتان / 3 ساعات (لـ12)</td></tr>
+                                <tr><td>الدستور وحقوق الإنسان</td><td>-</td><td>-</td><td>-</td><td>1 حصة / 20%</td><td>1 حصة / 20%</td><td>ساعة واحدة (خارج الجدول)</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="info-box">
+                    <h3><i class="fa-solid fa-triangle-exclamation"></i> خامساً: ضوابط الغياب وحالات الشطب والفصل للمرحلة الثانوية (ص 61-62)</h3>
+                    <ul class="hs-list">
+                        <li><b>شرط نسب الحضور:</b> التزام المتعلم بحضور 50% على الأقل من أيام الدراسة الفعلية خلال العام الدراسي يُعد شرطاً أساسياً لاجتياز العام الدراسي بنجاح.</li>
+                        <li><b>حد الغياب بغير عذر (الكويتي وغير الكويتي):</b>
+                            <ul style="padding-right:1rem; margin-top:4px;">
+                                <li>في اليوم الـ 25 غياب بدون عذر مقبول: يُحرم المتعلم ويُعد راسباً في جميع المواد وتُحسب السنة ضمن سنوات البقاء بالصف.</li>
+                                <li>تكرار البقاء بالصف 3 سنوات متتالية (للكويتي وأبناء الكويتيات ومجلس التعاون) و(سنتين لغير الكويتي) يستوجب الفصل والتحويل لمراكز تعليم الكبار أو المنازل.</li>
+                            </ul>
+                        </li>
+                        <li><b>غياب الحالات المرضية المزمنة والمستعصية:</b> يُسمح بطلب الاستثناء حتى (60 يوماً) ويرفع التقدير إلى اللجنة الطبية العليا لرعاية المتعلمين المرضى لدى الوكيل المساعد للشؤون التعليمية.</li>
+                        <li><b>عقد القران (الزواج):</b> تُفصل المتعلمة إذا ثبت عقد قرانها أثناء الدراسة الصباحية، ويحق لها الالتحاق بمراكز تعليم الكبار أو نظام المنازل، مع الاحتفاظ بدرجات الأعمال التي حصلت عليها.</li>
+                    </ul>
+                </div>
+
+                <div class="info-box">
+                    <h3><i class="fa-solid fa-pen-ruler"></i> سادساً: المواد خارج الجدول، الدور الثاني والمعدل التراكمي (ص 69-71)</h3>
+                    <ul class="hs-list">
+                        <li><b>المواد خارج الجدول (القرآن الكريم، الدستور، التربية البدنية، المعلوماتية):</b>
+                            ينجح المتعلم المتغيب دون عذر في امتحان نهاية الفصل الثاني في هذه المواد إذا كان مجموع الدرجات الحاصل عليها لا يقل عن النهاية الصغرى.
+                        </li>
+                        <li><b>الامتحانات العملية:</b> عند التغيب بعذر مقبول عن الامتحان العملي في الفصل الأول تُرحل الدرجة إلى نهاية الفصل الثاني، أما عند التغيب دون عذر فتكون درجته (صفر) في الجزء العملي ويُسمح له بدخول الامتحان النظرى التحريري.</li>
+                        <li><b>امتحانات الدور الثاني:</b> يُمنح فرصة دخول الدور الثاني للمتعلم الراسب في 3 مجالات دراسية فأقل، أو المتغيب بعذر مقبول عن امتحان الفصل الثاني. أما الراسب في أكثر من 3 مواد فيبقى للإعادة.</li>
+                        <li><b>احتساب درجة الدور الثاني للمتغيب بعذر:</b> تُحسب كالتالي: (معدل الأعمال اليومية للفصلين × 40%) + (درجة امتحان الدور الثاني × 60%).</li>
+                    </ul>
+                </div>
+            `;
+        }
+
+        function renderBylawSection(container) {
+            let html = `
+                <div class="section-header">
+                    <h2><i class="fa-solid fa-book-bookmark"></i> اللائحة التنفيذية الشاملة للتعليم 2026 (الـ 22 باباً)</h2>
+                    <a href="${BYLAW_PDF_URL}" target="_blank" class="btn-action btn-view" style="padding: 0.6rem 1.2rem; font-size:0.9rem; text-decoration:none; display:inline-flex; width:auto;">
+                        <i class="fa-solid fa-file-pdf"></i> فتح وثيقة اللائحة بالكامل (PDF)
+                    </a>
+                </div>
+
+                <div class="minister-speech-card">
+                    <div class="minister-header">
+                        <i class="fa-solid fa-quote-right"></i>
+                        <div class="minister-title">
+                            <h3>كلمة معالي وزير التربية</h3>
+                            <p>المهندس / سيد جلال الطبطبائي (ص 6 من اللائحة)</p>
+                        </div>
+                    </div>
+                    <div class="minister-full-speech">${FULL_MINISTER_SPEECH}</div>
+                    <a href="${BYLAW_PDF_URL}#page=6" target="_blank" class="btn-action btn-view" style="width: auto; background: var(--gold-accent); color: white; border: none; padding: 0.5rem 1.2rem; text-decoration:none; display:inline-flex;">
+                        <i class="fa-solid fa-book-open"></i> قراءة كلمة الوزير في وثيقة PDF (صفحة 6)
+                    </a>
+                </div>
+            `;
+
+            BYLAW_CHAPTERS.forEach(chap => {
+                html += `
+                    <div class="bylaw-card">
+                        <div class="bylaw-header">
+                            <div class="bylaw-title">${chap.title}</div>
+                            <div class="bylaw-pages">${chap.pages}</div>
+                        </div>
+                        <div class="bylaw-desc">${chap.desc}</div>
+                        <a href="${BYLAW_PDF_URL}#page=${chap.startPage}" target="_blank" class="btn-action btn-view" style="display:inline-flex; width:auto; padding:0.4rem 0.9rem; text-decoration:none;">
+                            <i class="fa-solid fa-book-open"></i> قراءة هذا الباب مباشرة في الـ PDF
+                        </a>
+                    </div>
+                `;
+            });
+
+            container.innerHTML = html;
+        }
+
+        function renderFilesList(categoryKey) {
+            const items = db[categoryKey] || [];
+            if (items.length === 0) {
+                return `<div style="grid-column: 1/-1; text-align: center; padding: 2rem; color: var(--text-muted);">لا توجد مستندات مرفوعة في هذا القسم حالياً.</div>`;
+            }
+
+            return items.map(item => `
+                <div class="file-card">
+                    <div class="file-info">
+                        <i class="fa-solid fa-file-pdf file-icon"></i>
+                        <div class="file-details">
+                            <h4>${item.title}</h4>
+                            <span><i class="fa-regular fa-clock"></i> ${item.date}</span>
+                        </div>
+                    </div>
+                    <div class="actions-group">
+                        <a href="${item.url}" target="_blank" class="btn-action btn-view">
+                            <i class="fa-solid fa-eye"></i> فتح المستند
+                        </a>
+                        <a href="${item.url}" download="${item.title}" class="btn-action btn-download">
+                            <i class="fa-solid fa-download"></i> تنزيل
+                        </a>
+                        ${isDesignerLoggedIn ? `
+                            <button onclick="editFileItem('${categoryKey}', ${item.id})" class="btn-action btn-edit" style="display:flex;">
+                                <i class="fa-solid fa-pen"></i>
+                            </button>
+                            <button onclick="deleteFileItem('${categoryKey}', ${item.id})" class="btn-action btn-delete" style="display:flex;">
+                                <i class="fa-solid fa-trash"></i>
+                            </button>
+                        ` : ''}
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        let currentUploadMode = 'upload';
+
+        function setUploadMode(mode) {
+            currentUploadMode = mode;
+            document.getElementById('modeUploadBtn').classList.toggle('active', mode === 'upload');
+            document.getElementById('modeLinkBtn').classList.toggle('active', mode === 'link');
+            document.getElementById('uploadModeGroup').style.display = (mode === 'upload') ? 'block' : 'none';
+            document.getElementById('linkModeGroup').style.display = (mode === 'link') ? 'block' : 'none';
+            document.getElementById('uploadErrorMsg').style.display = 'none';
+        }
+
+        function openFileModal(defaultCat = null) {
+            document.getElementById('editFileId').value = '';
+            document.getElementById('modalFileTitle').innerText = 'رفع مستند جديد';
+            document.getElementById('fileTitleInput').value = '';
+            document.getElementById('fileFileInput').value = '';
+            document.getElementById('fileLinkInput').value = '';
+            document.getElementById('uploadErrorMsg').style.display = 'none';
+            setUploadMode('upload');
+            if (defaultCat) {
+                document.getElementById('fileCategorySelect').value = defaultCat;
+            }
+            document.getElementById('fileModal').style.display = 'flex';
+        }
+
+        function closeFileModal() {
+            document.getElementById('fileModal').style.display = 'none';
+        }
+
+        async function saveFileSubmit(e) {
+            e.preventDefault();
+            const editId = document.getElementById('editFileId').value;
+            const cat = document.getElementById('fileCategorySelect').value;
+            const title = document.getElementById('fileTitleInput').value;
+            const fileInput = document.getElementById('fileFileInput');
+            const linkInput = document.getElementById('fileLinkInput');
+            const errMsg = document.getElementById('uploadErrorMsg');
+            const submitBtn = e.target.querySelector('.submit-btn');
+            errMsg.style.display = 'none';
+
+            const setLoading = (loading) => {
+                if (submitBtn) {
+                    submitBtn.disabled = loading;
+                    submitBtn.innerHTML = loading
+                        ? '<i class="fa-solid fa-spinner fa-spin"></i> جارِ الحفظ...'
+                        : '<i class="fa-solid fa-save"></i> حفظ ونشر فوراً';
+                }
+            };
+
+            // وضع الرابط الخارجي: لا يوجد حد لحجم الملف لأننا نخزن الرابط فقط كنص
+            if (currentUploadMode === 'link') {
+                const link = linkInput.value.trim();
+                if (!link) {
+                    errMsg.innerText = 'يرجى إدخال رابط الملف.';
+                    errMsg.style.display = 'block';
+                    return;
+                }
+                if (!/^https?:\/\//i.test(link)) {
+                    errMsg.innerText = 'يرجى إدخال رابط صحيح يبدأ بـ https://';
+                    errMsg.style.display = 'block';
+                    return;
+                }
+
+                setLoading(true);
+                try {
+                    if (editId) {
+                        const { error } = await supabaseClient
+                            .from('documents')
+                            .update({ category: cat, title: title, file_url: link, storage_path: null })
+                            .eq('id', editId);
+                        if (error) throw error;
+                    } else {
+                        const { error } = await supabaseClient
+                            .from('documents')
+                            .insert({ category: cat, title: title, file_url: link, storage_path: null });
+                        if (error) throw error;
+                    }
+                    await loadAllDocumentsFromSupabase();
+                    closeFileModal();
+                    renderSection(currentSection);
+                    alert('تم حفظ الرابط ونشره فوراً للمستخدمين!');
+                } catch (err) {
+                    console.error(err);
+                    errMsg.innerText = 'حدث خطأ أثناء الحفظ في قاعدة البيانات: ' + (err.message || 'خطأ غير معروف');
+                    errMsg.style.display = 'block';
+                } finally {
+                    setLoading(false);
+                }
+                return;
+            }
+
+            // وضع الرفع المباشر: يُرفع الملف إلى Supabase Storage (بأي حجم ضمن حدود الخطة)
+            if (fileInput.files.length > 0) {
+                const file = fileInput.files[0];
+                setLoading(true);
+                try {
+                    const safeName = file.name.replace(/[^a-zA-Z0-9.\-_]/g, '_');
+                    const path = `${cat}/${Date.now()}_${safeName}`;
+
+                    const { error: uploadError } = await supabaseClient
+                        .storage
+                        .from(STORAGE_BUCKET)
+                        .upload(path, file);
+                    if (uploadError) throw uploadError;
+
+                    const { data: publicUrlData } = supabaseClient
+                        .storage
+                        .from(STORAGE_BUCKET)
+                        .getPublicUrl(path);
+                    const publicUrl = publicUrlData.publicUrl;
+
+                    if (editId) {
+                        // إذا كان هناك ملف قديم مرفوع، احذفيه من التخزين قبل استبداله
+                        const oldItem = (db[cat] || []).find(i => i.id == editId);
+                        if (oldItem && oldItem.storage_path) {
+                            await supabaseClient.storage.from(STORAGE_BUCKET).remove([oldItem.storage_path]);
+                        }
+                        const { error } = await supabaseClient
+                            .from('documents')
+                            .update({ category: cat, title: title, file_url: publicUrl, storage_path: path })
+                            .eq('id', editId);
+                        if (error) throw error;
+                    } else {
+                        const { error } = await supabaseClient
+                            .from('documents')
+                            .insert({ category: cat, title: title, file_url: publicUrl, storage_path: path });
+                        if (error) throw error;
+                    }
+
+                    await loadAllDocumentsFromSupabase();
+                    closeFileModal();
+                    renderSection(currentSection);
+                    alert('تم حفظ الملف ونشره فوراً للمستخدمين!');
+                } catch (err) {
+                    console.error(err);
+                    errMsg.innerText = 'تعذّر رفع الملف: ' + (err.message || 'خطأ غير معروف') + '. تأكدي من أن مجلد school-files تم إنشاؤه وأنه Public.';
+                    errMsg.style.display = 'block';
+                } finally {
+                    setLoading(false);
+                }
+            } else {
+                if (editId) {
+                    setLoading(true);
+                    try {
+                        const { error } = await supabaseClient
+                            .from('documents')
+                            .update({ category: cat, title: title })
+                            .eq('id', editId);
+                        if (error) throw error;
+                        await loadAllDocumentsFromSupabase();
+                        closeFileModal();
+                        renderSection(currentSection);
+                        alert('تم تعديل العنوان بنجاح!');
+                    } catch (err) {
+                        console.error(err);
+                        errMsg.innerText = 'حدث خطأ أثناء التعديل: ' + (err.message || 'خطأ غير معروف');
+                        errMsg.style.display = 'block';
+                    } finally {
+                        setLoading(false);
+                    }
+                } else {
+                    errMsg.innerText = 'يرجى اختيار ملف لرفعه.';
+                    errMsg.style.display = 'block';
+                }
+            }
+        }
+
+        function editFileItem(catKey, itemId) {
+            const item = db[catKey].find(i => i.id == itemId);
+            if (!item) return;
+
+            document.getElementById('editFileId').value = item.id;
+            document.getElementById('fileCategorySelect').value = catKey;
+            document.getElementById('fileTitleInput').value = item.title;
+            document.getElementById('modalFileTitle').innerText = 'تعديل المستند';
+            document.getElementById('uploadErrorMsg').style.display = 'none';
+            document.getElementById('fileFileInput').value = '';
+
+            // تحديد الوضع تلقائياً: هل هو ملف مرفوع إلى Supabase Storage أم رابط خارجي؟
+            if (item.storage_path) {
+                setUploadMode('upload');
+                document.getElementById('fileLinkInput').value = '';
+            } else {
+                setUploadMode('link');
+                document.getElementById('fileLinkInput').value = item.url || '';
+            }
+
+            document.getElementById('fileModal').style.display = 'flex';
+        }
+
+        async function deleteFileItem(catKey, itemId) {
+            if (!confirm('هل أنت متأكد من حذف هذا المستند نهائياً؟')) return;
+
+            const item = (db[catKey] || []).find(i => i.id == itemId);
+
+            try {
+                // حذف الملف الفعلي من التخزين إن كان مرفوعاً (وليس رابطاً خارجياً)
+                if (item && item.storage_path) {
+                    await supabaseClient.storage.from(STORAGE_BUCKET).remove([item.storage_path]);
+                }
+                const { error } = await supabaseClient
+                    .from('documents')
+                    .delete()
+                    .eq('id', itemId);
+                if (error) throw error;
+
+                await loadAllDocumentsFromSupabase();
+                renderSection(currentSection);
+            } catch (err) {
+                console.error(err);
+                alert('تعذّر حذف المستند: ' + (err.message || 'خطأ غير معروف'));
+            }
+        }
+    </script>
+</body>
+</html>
