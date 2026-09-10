@@ -463,6 +463,47 @@
             color: var(--primary-dark);
         }
 
+        .signatures-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 0.8rem;
+        }
+
+        .signature-chip {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 10px;
+            padding: 6px 10px;
+        }
+
+        .signature-chip img {
+            width: 60px;
+            height: 30px;
+            object-fit: contain;
+            background: white;
+            border-radius: 4px;
+            border: 1px solid #e2e8f0;
+        }
+
+        .signature-chip-info {
+            display: flex;
+            flex-direction: column;
+            font-size: 0.75rem;
+        }
+
+        .signature-chip-info b {
+            color: var(--primary-dark);
+            font-size: 0.8rem;
+        }
+
+        .signature-chip-info span {
+            color: var(--text-muted);
+        }
+
         .minister-speech-card {
             background: linear-gradient(135deg, #1e3a8a, #0f172a);
             color: white;
@@ -874,6 +915,10 @@
                     <span><i class="fa-solid fa-file-lines"></i> نماذج إدارية</span>
                     <i class="fa-solid fa-chevron-left"></i>
                 </li>
+                <li class="nav-item" onclick="switchSection('ack-signoff', this)">
+                    <span><i class="fa-solid fa-signature"></i> التوقيع بالعلم</span>
+                    <i class="fa-solid fa-chevron-left"></i>
+                </li>
                 <li class="nav-item" id="adminNavItem" onclick="handleDesignerAuthClick()" style="border-top: 1px dashed #cbd5e1; margin-top: 8px; padding-top: 14px;">
                     <span><i class="fa-solid fa-user-lock"></i> <span id="authBtnText">دخول الإدارة</span></span>
                     <i class="fa-solid fa-chevron-left"></i>
@@ -956,6 +1001,7 @@
                             <option value="class-schedules">جداول الفصول</option>
                             <option value="announcements">الإعلانات</option>
                             <option value="admin-forms">نماذج إدارية</option>
+                            <option value="ack-signoff">التوقيع بالعلم</option>
                         </optgroup>
                     </select>
                 </div>
@@ -989,6 +1035,29 @@
                 <button type="submit" class="submit-btn"><i class="fa-solid fa-save"></i> حفظ ونشر فوراً</button>
                 <p id="uploadErrorMsg" style="color: var(--danger-red); font-size: 0.85rem; margin-top: 8px; text-align: center; display: none;"></p>
             </form>
+        </div>
+    </div>
+
+    <!-- نافذة التوقيع بالعلم (رسم توقيع رئيسة القسم) -->
+    <div class="modal" id="signatureModal">
+        <div class="modal-box" style="max-width: 480px;">
+            <span class="close-modal" onclick="closeSignatureModal()">&times;</span>
+            <h3 style="margin-bottom: 0.4rem; color: var(--primary-blue);">
+                <i class="fa-solid fa-signature"></i> توقيع بالعلم
+            </h3>
+            <p style="font-size:0.88rem; color:var(--text-muted); margin-bottom:0.8rem;">
+                القسم: <b id="signatureDeptLabel" style="color:var(--bright-blue);"></b>
+            </p>
+            <canvas id="signatureCanvas" width="440" height="200" style="width:100%; touch-action:none; border:2px dashed #cbd5e1; border-radius:10px; background:#f8fafc; cursor:crosshair;"></canvas>
+            <p style="font-size:0.78rem; color:var(--text-muted); margin-top:6px; text-align:center;">ارسمي توقيعك بالإصبع أو الماوس داخل المربع أعلاه</p>
+            <div style="display:flex; gap:8px; margin-top:0.8rem;">
+                <button type="button" class="btn-action btn-edit" style="flex:1;" onclick="clearSignaturePad()">
+                    <i class="fa-solid fa-eraser"></i> مسح
+                </button>
+                <button type="button" class="submit-btn" style="flex:2; margin-top:0;" onclick="saveSignature()">
+                    <i class="fa-solid fa-check"></i> حفظ التوقيع
+                </button>
+            </div>
         </div>
     </div>
 
@@ -1071,7 +1140,16 @@
         const ALL_CATEGORIES = ['circulars-ministerial','circulars-internal','bulletins-external','bulletins-internal',
          'decisions-ministerial','decisions-internal','evaluation','plans','exams-short-p1',
          'exams-short-p2','exams-end-p1','exams-end-p2','class-schedules','announcements',
-         'admin-forms'];
+         'admin-forms','ack-signoff'];
+
+        const DEPARTMENTS = [
+            'التربية الإسلامية', 'اللغة العربية', 'اللغة الإنجليزية', 'اللغة الفرنسية',
+            'الرياضيات', 'الكيمياء والفيزياء', 'الأحياء والجيولوجيا', 'التاريخ والجغرافيا',
+            'المواد الفلسفية', 'الحاسب الآلي', 'التربية البدنية', 'الاقتصاد المنزلي',
+            'التربية الموسيقية', 'التربية الفنية'
+        ];
+
+        let allSignatures = []; // كل تواقيع الأقسام على المستندات، تُحمّل من جدول signatures
 
         let db = {};
         ALL_CATEGORIES.forEach(k => { db[k] = []; });
@@ -1298,6 +1376,9 @@
                         <div class="welcome-quick-card" onclick="switchSection('admin-forms', document.querySelectorAll('.nav-item')[8])">
                             <i class="fa-solid fa-file-lines"></i><span>نماذج إدارية</span>
                         </div>
+                        <div class="welcome-quick-card" onclick="switchSection('ack-signoff', document.querySelectorAll('.nav-item')[9])">
+                            <i class="fa-solid fa-signature"></i><span>التوقيع بالعلم</span>
+                        </div>
                     </div>
                 `;
             } else if (secKey === 'circulars') {
@@ -1403,6 +1484,207 @@
                     </div>
                     <div class="files-grid" id="filesGrid">${renderFilesList('admin-forms')}</div>
                 `;
+            } else if (secKey === 'ack-signoff') {
+                currentSubTabKey = 'ack-signoff';
+                main.innerHTML = `
+                    <div class="section-header">
+                        <h2><i class="fa-solid fa-signature"></i> التوقيع بالعلم</h2>
+                        ${isDesignerLoggedIn ? `<button class="designer-btn" onclick="openFileModal('ack-signoff')"><i class="fa-solid fa-plus"></i> إضافة مستند للتوقيع</button>` : ''}
+                    </div>
+                    <div id="ackSignoffList">${renderAckSignoffList()}</div>
+                `;
+                loadSignaturesForVisibleDocs();
+            }
+        }
+
+        // ============================================
+        // ميزة "التوقيع بالعلم": كل مستند له قائمة اختيار قسم وزر توقيع،
+        // وتظهر تحته التواقيع التي أضافتها رئيسات الأقسام سابقاً
+        // ============================================
+        function renderAckSignoffList() {
+            const items = db['ack-signoff'] || [];
+            if (items.length === 0) {
+                return `<div style="text-align: center; padding: 2rem; color: var(--text-muted);">لا توجد مستندات تحتاج توقيعاً حالياً.</div>`;
+            }
+
+            return items.map(item => {
+                const deptOptions = DEPARTMENTS.map(d => `<option value="${d}">${d}</option>`).join('');
+                return `
+                <div class="file-card" style="margin-bottom: 1rem;">
+                    <div class="file-info">
+                        <i class="fa-solid fa-file-signature file-icon"></i>
+                        <div class="file-details">
+                            <h4>${item.title}</h4>
+                            <span><i class="fa-regular fa-clock"></i> ${item.date}</span>
+                        </div>
+                    </div>
+                    <div class="actions-group" style="margin-bottom:0.8rem;">
+                        <a href="${item.url}" target="_blank" class="btn-action btn-view">
+                            <i class="fa-solid fa-eye"></i> فتح المستند
+                        </a>
+                        ${isDesignerLoggedIn ? `
+                            <button onclick="editFileItem('ack-signoff', ${item.id})" class="btn-action btn-edit" style="display:flex;">
+                                <i class="fa-solid fa-pen"></i>
+                            </button>
+                            <button onclick="deleteFileItem('ack-signoff', ${item.id})" class="btn-action btn-delete" style="display:flex;">
+                                <i class="fa-solid fa-trash"></i>
+                            </button>
+                        ` : ''}
+                    </div>
+                    <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center; border-top:1px dashed #cbd5e1; padding-top:0.8rem;">
+                        <select id="deptSelect-${item.id}" style="flex:1; min-width:180px; padding:0.55rem; border:1px solid #cbd5e1; border-radius:8px;">
+                            <option value="">اختاري القسم للتوقيع...</option>
+                            ${deptOptions}
+                        </select>
+                        <button class="btn-action btn-view" style="flex:none; width:auto; padding:0.55rem 1.2rem;" onclick="openSignaturePad(${item.id})">
+                            <i class="fa-solid fa-signature"></i> توقيع
+                        </button>
+                    </div>
+                    <div id="signaturesList-${item.id}" class="signatures-list">
+                        <span style="font-size:0.82rem; color:var(--text-muted);">جارِ تحميل التواقيع...</span>
+                    </div>
+                </div>
+                `;
+            }).join('');
+        }
+
+        // تحميل كل التواقيع الخاصة بمستندات هذا القسم من قاعدة البيانات وعرضها تحت كل مستند
+        async function loadSignaturesForVisibleDocs() {
+            const items = db['ack-signoff'] || [];
+            if (items.length === 0) return;
+
+            const { data, error } = await supabaseClient
+                .from('signatures')
+                .select('*')
+                .in('document_id', items.map(i => i.id))
+                .order('signed_at', { ascending: false });
+
+            if (error) {
+                console.error('تعذّر تحميل التواقيع:', error);
+                return;
+            }
+            allSignatures = data || [];
+
+            items.forEach(item => {
+                const container = document.getElementById(`signaturesList-${item.id}`);
+                if (!container) return;
+                const sigsForDoc = allSignatures.filter(s => s.document_id === item.id);
+                if (sigsForDoc.length === 0) {
+                    container.innerHTML = `<span style="font-size:0.82rem; color:var(--text-muted);">لم يوقّع أي قسم على هذا المستند بعد.</span>`;
+                } else {
+                    container.innerHTML = sigsForDoc.map(s => `
+                        <div class="signature-chip">
+                            <img src="${s.signature_data}" alt="توقيع ${s.department}">
+                            <div class="signature-chip-info">
+                                <b>${s.department}</b>
+                                <span>${new Date(s.signed_at).toLocaleDateString('ar-KW')}</span>
+                            </div>
+                        </div>
+                    `).join('');
+                }
+            });
+        }
+
+        let currentSignatureDocId = null;
+        let sigCanvas, sigCtx, isDrawing = false;
+
+        function openSignaturePad(docId) {
+            const deptSelect = document.getElementById(`deptSelect-${docId}`);
+            const department = deptSelect ? deptSelect.value : '';
+            if (!department) {
+                alert('يرجى اختيار القسم أولاً قبل التوقيع.');
+                return;
+            }
+            currentSignatureDocId = docId;
+            document.getElementById('signatureDeptLabel').innerText = department;
+            document.getElementById('signatureModal').style.display = 'flex';
+
+            setTimeout(() => {
+                sigCanvas = document.getElementById('signatureCanvas');
+                sigCtx = sigCanvas.getContext('2d');
+                sigCtx.clearRect(0, 0, sigCanvas.width, sigCanvas.height);
+                sigCtx.strokeStyle = '#0b132b';
+                sigCtx.lineWidth = 2.5;
+                sigCtx.lineCap = 'round';
+                setupSignatureDrawing();
+            }, 50);
+        }
+
+        function setupSignatureDrawing() {
+            const getPos = (e) => {
+                const rect = sigCanvas.getBoundingClientRect();
+                const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+                const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+                return {
+                    x: (clientX - rect.left) * (sigCanvas.width / rect.width),
+                    y: (clientY - rect.top) * (sigCanvas.height / rect.height)
+                };
+            };
+
+            const start = (e) => {
+                e.preventDefault();
+                isDrawing = true;
+                const pos = getPos(e);
+                sigCtx.beginPath();
+                sigCtx.moveTo(pos.x, pos.y);
+            };
+            const move = (e) => {
+                if (!isDrawing) return;
+                e.preventDefault();
+                const pos = getPos(e);
+                sigCtx.lineTo(pos.x, pos.y);
+                sigCtx.stroke();
+            };
+            const end = () => { isDrawing = false; };
+
+            sigCanvas.onmousedown = start;
+            sigCanvas.onmousemove = move;
+            sigCanvas.onmouseup = end;
+            sigCanvas.onmouseleave = end;
+            sigCanvas.ontouchstart = start;
+            sigCanvas.ontouchmove = move;
+            sigCanvas.ontouchend = end;
+        }
+
+        function clearSignaturePad() {
+            if (sigCtx) sigCtx.clearRect(0, 0, sigCanvas.width, sigCanvas.height);
+        }
+
+        function closeSignatureModal() {
+            document.getElementById('signatureModal').style.display = 'none';
+            currentSignatureDocId = null;
+        }
+
+        async function saveSignature() {
+            if (!sigCanvas || !currentSignatureDocId) return;
+
+            const blank = document.createElement('canvas');
+            blank.width = sigCanvas.width;
+            blank.height = sigCanvas.height;
+            if (sigCanvas.toDataURL() === blank.toDataURL()) {
+                alert('يرجى رسم التوقيع أولاً.');
+                return;
+            }
+
+            const department = document.getElementById('signatureDeptLabel').innerText;
+            const signatureData = sigCanvas.toDataURL('image/png');
+
+            try {
+                const { error } = await supabaseClient.from('signatures').upsert({
+                    document_id: currentSignatureDocId,
+                    department: department,
+                    signature_data: signatureData,
+                    signed_at: new Date().toISOString()
+                }, { onConflict: 'document_id,department' });
+
+                if (error) throw error;
+
+                closeSignatureModal();
+                alert('تم حفظ التوقيع بنجاح!');
+                loadSignaturesForVisibleDocs();
+            } catch (err) {
+                console.error(err);
+                alert('تعذّر حفظ التوقيع: ' + (err.message || 'خطأ غير معروف'));
             }
         }
 
