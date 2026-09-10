@@ -1061,6 +1061,29 @@
         </div>
     </div>
 
+    <!-- نافذة إضافة/تعديل مستند في قسم "التوقيع بالعلم" (اسم وتاريخ فقط، بدون رفع ملف) -->
+    <div class="modal" id="ackFormModal">
+        <div class="modal-box" style="max-width: 440px;">
+            <span class="close-modal" onclick="closeAckFormModal()">&times;</span>
+            <h3 id="ackFormTitle" style="margin-bottom: 1rem; color: var(--primary-blue);">
+                <i class="fa-solid fa-file-signature"></i> إضافة مستند للتوقيع
+            </h3>
+            <form onsubmit="saveAckDocument(event)">
+                <input type="hidden" id="ackEditId">
+                <div class="form-group">
+                    <label>اسم التعميم / المستند</label>
+                    <input type="text" id="ackTitleInput" placeholder="مثال: تعميم الدوام الصيفي" required>
+                </div>
+                <div class="form-group">
+                    <label>تاريخ الإضافة</label>
+                    <input type="date" id="ackDateInput" required>
+                </div>
+                <button type="submit" class="submit-btn"><i class="fa-solid fa-save"></i> حفظ</button>
+                <p id="ackFormErrorMsg" style="color: var(--danger-red); font-size: 0.85rem; margin-top: 8px; text-align: center; display: none;"></p>
+            </form>
+        </div>
+    </div>
+
     <footer>
         <div class="footer-content">
             <div class="footer-credits">
@@ -1489,7 +1512,7 @@
                 main.innerHTML = `
                     <div class="section-header">
                         <h2><i class="fa-solid fa-signature"></i> التوقيع بالعلم</h2>
-                        ${isDesignerLoggedIn ? `<button class="designer-btn" onclick="openFileModal('ack-signoff')"><i class="fa-solid fa-plus"></i> إضافة مستند للتوقيع</button>` : ''}
+                        ${isDesignerLoggedIn ? `<button class="designer-btn" onclick="openAckFormModal()"><i class="fa-solid fa-plus"></i> إضافة مستند للتوقيع</button>` : ''}
                     </div>
                     <div id="ackSignoffList">${renderAckSignoffList()}</div>
                 `;
@@ -1507,45 +1530,78 @@
                 return `<div style="text-align: center; padding: 2rem; color: var(--text-muted);">لا توجد مستندات تحتاج توقيعاً حالياً.</div>`;
             }
 
-            return items.map(item => {
-                const deptOptions = DEPARTMENTS.map(d => `<option value="${d}">${d}</option>`).join('');
-                return `
-                <div class="file-card" style="margin-bottom: 1rem;">
-                    <div class="file-info">
-                        <i class="fa-solid fa-file-signature file-icon"></i>
-                        <div class="file-details">
-                            <h4>${item.title}</h4>
-                            <span><i class="fa-regular fa-clock"></i> ${item.date}</span>
-                        </div>
-                    </div>
-                    <div class="actions-group" style="margin-bottom:0.8rem;">
-                        <a href="${item.url}" target="_blank" class="btn-action btn-view">
-                            <i class="fa-solid fa-eye"></i> فتح المستند
-                        </a>
+            const deptOptions = DEPARTMENTS.map(d => `<option value="${d}">${d}</option>`).join('');
+
+            let html = `
+                <div style="overflow-x:auto;">
+                <table class="styled-table" style="min-width:820px;">
+                    <thead>
+                        <tr>
+                            <th>اسم الملف</th>
+                            <th>تاريخ الإضافة</th>
+                            <th>اختيار القسم</th>
+                            <th>التوقيع</th>
+                            ${isDesignerLoggedIn ? '<th>إدارة</th>' : ''}
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+
+            items.forEach(item => {
+                html += `
+                    <tr>
+                        <td style="text-align:right;">
+                            ${item.url ? `
+                                <a href="${item.url}" target="_blank" style="color:var(--bright-blue); font-weight:700; text-decoration:none;">
+                                    <i class="fa-solid fa-file-signature"></i> ${item.title}
+                                </a>
+                            ` : `
+                                <span style="color:var(--primary-dark); font-weight:700;">
+                                    <i class="fa-solid fa-file-signature"></i> ${item.title}
+                                </span>
+                            `}
+                        </td>
+                        <td>${item.date}</td>
+                        <td>
+                            <select id="deptSelect-${item.id}" style="width:100%; min-width:170px; padding:0.5rem; border:1px solid #cbd5e1; border-radius:8px;">
+                                <option value="">اختاري القسم...</option>
+                                ${deptOptions}
+                            </select>
+                        </td>
+                        <td>
+                            <button class="btn-action btn-view" style="width:auto; padding:0.5rem 1rem;" onclick="openSignaturePad(${item.id})">
+                                <i class="fa-solid fa-signature"></i> توقيع
+                            </button>
+                        </td>
                         ${isDesignerLoggedIn ? `
-                            <button onclick="editFileItem('ack-signoff', ${item.id})" class="btn-action btn-edit" style="display:flex;">
-                                <i class="fa-solid fa-pen"></i>
-                            </button>
-                            <button onclick="deleteFileItem('ack-signoff', ${item.id})" class="btn-action btn-delete" style="display:flex;">
-                                <i class="fa-solid fa-trash"></i>
-                            </button>
+                        <td>
+                            <div style="display:flex; gap:6px; justify-content:center;">
+                                <button onclick="openAckFormModal(${item.id})" class="btn-action btn-edit" style="width:auto; padding:0.5rem 0.8rem;">
+                                    <i class="fa-solid fa-pen"></i>
+                                </button>
+                                <button onclick="deleteFileItem('ack-signoff', ${item.id})" class="btn-action btn-delete" style="width:auto; padding:0.5rem 0.8rem;">
+                                    <i class="fa-solid fa-trash"></i>
+                                </button>
+                            </div>
+                        </td>
                         ` : ''}
-                    </div>
-                    <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center; border-top:1px dashed #cbd5e1; padding-top:0.8rem;">
-                        <select id="deptSelect-${item.id}" style="flex:1; min-width:180px; padding:0.55rem; border:1px solid #cbd5e1; border-radius:8px;">
-                            <option value="">اختاري القسم للتوقيع...</option>
-                            ${deptOptions}
-                        </select>
-                        <button class="btn-action btn-view" style="flex:none; width:auto; padding:0.55rem 1.2rem;" onclick="openSignaturePad(${item.id})">
-                            <i class="fa-solid fa-signature"></i> توقيع
-                        </button>
-                    </div>
-                    <div id="signaturesList-${item.id}" class="signatures-list">
-                        <span style="font-size:0.82rem; color:var(--text-muted);">جارِ تحميل التواقيع...</span>
-                    </div>
-                </div>
+                    </tr>
+                    <tr>
+                        <td colspan="${isDesignerLoggedIn ? 5 : 4}" style="background:#f8fafc; text-align:right; padding:0.8rem 1rem;">
+                            <div id="signaturesList-${item.id}" class="signatures-list">
+                                <span style="font-size:0.82rem; color:var(--text-muted);">جارِ تحميل التواقيع...</span>
+                            </div>
+                        </td>
+                    </tr>
                 `;
-            }).join('');
+            });
+
+            html += `
+                    </tbody>
+                </table>
+                </div>
+            `;
+            return html;
         }
 
         // تحميل كل التواقيع الخاصة بمستندات هذا القسم من قاعدة البيانات وعرضها تحت كل مستند
@@ -1685,6 +1741,70 @@
             } catch (err) {
                 console.error(err);
                 alert('تعذّر حفظ التوقيع: ' + (err.message || 'خطأ غير معروف'));
+            }
+        }
+
+        // ============================================
+        // إضافة/تعديل مستندات "التوقيع بالعلم" - اسم وتاريخ فقط بدون رفع ملف
+        // ============================================
+        function openAckFormModal(editId = null) {
+            document.getElementById('ackFormErrorMsg').style.display = 'none';
+            if (editId) {
+                const item = (db['ack-signoff'] || []).find(i => i.id == editId);
+                if (!item) return;
+                document.getElementById('ackEditId').value = item.id;
+                document.getElementById('ackTitleInput').value = item.title;
+                document.getElementById('ackDateInput').value = item.date;
+                document.getElementById('ackFormTitle').innerHTML = '<i class="fa-solid fa-file-signature"></i> تعديل مستند التوقيع';
+            } else {
+                document.getElementById('ackEditId').value = '';
+                document.getElementById('ackTitleInput').value = '';
+                document.getElementById('ackDateInput').value = new Date().toISOString().split('T')[0];
+                document.getElementById('ackFormTitle').innerHTML = '<i class="fa-solid fa-file-signature"></i> إضافة مستند للتوقيع';
+            }
+            document.getElementById('ackFormModal').style.display = 'flex';
+        }
+
+        function closeAckFormModal() {
+            document.getElementById('ackFormModal').style.display = 'none';
+        }
+
+        async function saveAckDocument(e) {
+            e.preventDefault();
+            const editId = document.getElementById('ackEditId').value;
+            const title = document.getElementById('ackTitleInput').value.trim();
+            const dateValue = document.getElementById('ackDateInput').value;
+            const errMsg = document.getElementById('ackFormErrorMsg');
+            errMsg.style.display = 'none';
+
+            if (!title || !dateValue) {
+                errMsg.innerText = 'يرجى تعبئة اسم المستند والتاريخ.';
+                errMsg.style.display = 'block';
+                return;
+            }
+
+            const isoDate = new Date(dateValue + 'T12:00:00').toISOString();
+
+            try {
+                if (editId) {
+                    const { error } = await supabaseClient
+                        .from('documents')
+                        .update({ title: title, created_at: isoDate })
+                        .eq('id', editId);
+                    if (error) throw error;
+                } else {
+                    const { error } = await supabaseClient
+                        .from('documents')
+                        .insert({ category: 'ack-signoff', title: title, file_url: '', storage_path: null, created_at: isoDate });
+                    if (error) throw error;
+                }
+                await loadAllDocumentsFromSupabase();
+                closeAckFormModal();
+                renderSection('ack-signoff');
+            } catch (err) {
+                console.error(err);
+                errMsg.innerText = 'حدث خطأ أثناء الحفظ: ' + (err.message || 'خطأ غير معروف');
+                errMsg.style.display = 'block';
             }
         }
 
