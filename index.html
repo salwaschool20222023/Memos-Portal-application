@@ -827,6 +827,36 @@
 
             /* السماح بتمرير الجداول أفقياً بدل كسر التصميم */
             .styled-table { display: block; overflow-x: auto; white-space: nowrap; -webkit-overflow-scrolling: touch; }
+
+            /* تحويل جدول "التوقيع بالعلم" إلى بطاقات مكدّسة على الموبايل بدل التمرير الأفقي */
+            .ack-table { white-space: normal !important; overflow: visible; }
+            .ack-table thead { display: none; }
+            .ack-table, .ack-table tbody, .ack-table tr, .ack-table td { display: block; width: 100%; }
+            .ack-table tr:not(.ack-signatures-row) {
+                border: 1px solid #e2e8f0;
+                border-radius: 10px 10px 0 0;
+                margin-top: 12px;
+                overflow: hidden;
+            }
+            .ack-table tr.ack-signatures-row {
+                border: 1px solid #e2e8f0;
+                border-top: none;
+                border-radius: 0 0 10px 10px;
+                margin-bottom: 4px;
+            }
+            .ack-table td {
+                text-align: right !important;
+                padding: 0.6rem 1rem;
+                border-bottom: 1px solid #f1f5f9;
+            }
+            .ack-table td[data-label]::before {
+                content: attr(data-label);
+                display: block;
+                font-weight: 700;
+                color: var(--text-muted);
+                font-size: 0.72rem;
+                margin-bottom: 3px;
+            }
         }
 
         @media (max-width: 420px) {
@@ -915,6 +945,10 @@
                     <span><i class="fa-solid fa-file-lines"></i> نماذج إدارية</span>
                     <i class="fa-solid fa-chevron-left"></i>
                 </li>
+                <li class="nav-item" onclick="switchSection('tracks-system', this)">
+                    <span><i class="fa-solid fa-road"></i> نظام المقررات (المسارات)</span>
+                    <i class="fa-solid fa-chevron-left"></i>
+                </li>
                 <li class="nav-item" onclick="switchSection('ack-signoff', this)">
                     <span><i class="fa-solid fa-signature"></i> التوقيع بالعلم</span>
                     <i class="fa-solid fa-chevron-left"></i>
@@ -1001,7 +1035,7 @@
                             <option value="class-schedules">جداول الفصول</option>
                             <option value="announcements">الإعلانات</option>
                             <option value="admin-forms">نماذج إدارية</option>
-                            <option value="ack-signoff">التوقيع بالعلم</option>
+                            <option value="tracks-system">نظام المقررات (المسارات)</option>
                         </optgroup>
                     </select>
                 </div>
@@ -1058,29 +1092,6 @@
                     <i class="fa-solid fa-check"></i> حفظ التوقيع
                 </button>
             </div>
-        </div>
-    </div>
-
-    <!-- نافذة إضافة/تعديل مستند في قسم "التوقيع بالعلم" (اسم وتاريخ فقط، بدون رفع ملف) -->
-    <div class="modal" id="ackFormModal">
-        <div class="modal-box" style="max-width: 440px;">
-            <span class="close-modal" onclick="closeAckFormModal()">&times;</span>
-            <h3 id="ackFormTitle" style="margin-bottom: 1rem; color: var(--primary-blue);">
-                <i class="fa-solid fa-file-signature"></i> إضافة مستند للتوقيع
-            </h3>
-            <form onsubmit="saveAckDocument(event)">
-                <input type="hidden" id="ackEditId">
-                <div class="form-group">
-                    <label>اسم التعميم / المستند</label>
-                    <input type="text" id="ackTitleInput" placeholder="مثال: تعميم الدوام الصيفي" required>
-                </div>
-                <div class="form-group">
-                    <label>تاريخ الإضافة</label>
-                    <input type="date" id="ackDateInput" required>
-                </div>
-                <button type="submit" class="submit-btn"><i class="fa-solid fa-save"></i> حفظ</button>
-                <p id="ackFormErrorMsg" style="color: var(--danger-red); font-size: 0.85rem; margin-top: 8px; text-align: center; display: none;"></p>
-            </form>
         </div>
     </div>
 
@@ -1163,7 +1174,27 @@
         const ALL_CATEGORIES = ['circulars-ministerial','circulars-internal','bulletins-external','bulletins-internal',
          'decisions-ministerial','decisions-internal','evaluation','plans','exams-short-p1',
          'exams-short-p2','exams-end-p1','exams-end-p2','class-schedules','announcements',
-         'admin-forms','ack-signoff'];
+         'admin-forms','tracks-system'];
+
+        // تسميات الأقسام (أقسام الموقع) لعرضها في جدول "التوقيع بالعلم"
+        const CATEGORY_LABELS = {
+            'circulars-ministerial': 'تعاميم وزارية',
+            'circulars-internal': 'تعاميم داخلية',
+            'bulletins-external': 'نشرات خارجية',
+            'bulletins-internal': 'نشرات داخلية',
+            'decisions-ministerial': 'قرارات وزارية',
+            'decisions-internal': 'قرارات داخلية',
+            'evaluation': 'آليات',
+            'plans': 'الخطط الدراسية والإدارية',
+            'exams-short-p1': 'اختبارات قصيرة - الفصل الدراسي الأول',
+            'exams-short-p2': 'اختبارات قصيرة - الفصل الدراسي الثاني',
+            'exams-end-p1': 'اختبارات نهاية الفترة الدراسية الأولى',
+            'exams-end-p2': 'اختبارات الفترة الدراسية الثانية',
+            'class-schedules': 'جداول الفصول',
+            'announcements': 'الإعلانات',
+            'admin-forms': 'نماذج إدارية',
+            'tracks-system': 'نظام المقررات (المسارات)'
+        };
 
         const DEPARTMENTS = [
             'التربية الإسلامية', 'اللغة العربية', 'اللغة الإنجليزية', 'اللغة الفرنسية',
@@ -1173,6 +1204,7 @@
         ];
 
         let allSignatures = []; // كل تواقيع الأقسام على المستندات، تُحمّل من جدول signatures
+        let allDocsFlat = []; // كل المستندات من جميع الأقسام مجمّعة معاً، تُستخدم في صفحة "التوقيع بالعلم"
 
         let db = {};
         ALL_CATEGORIES.forEach(k => { db[k] = []; });
@@ -1282,15 +1314,19 @@
             }
 
             ALL_CATEGORIES.forEach(k => { db[k] = []; });
+            allDocsFlat = [];
             (data || []).forEach(row => {
-                if (!db[row.category]) db[row.category] = [];
-                db[row.category].push({
+                const docObj = {
                     id: row.id,
                     title: row.title,
                     url: row.file_url,
                     storage_path: row.storage_path,
-                    date: row.created_at ? row.created_at.split('T')[0] : ''
-                });
+                    date: row.created_at ? row.created_at.split('T')[0] : '',
+                    category: row.category
+                };
+                if (!db[row.category]) db[row.category] = [];
+                db[row.category].push(docObj);
+                allDocsFlat.push(docObj);
             });
         }
 
@@ -1399,7 +1435,10 @@
                         <div class="welcome-quick-card" onclick="switchSection('admin-forms', document.querySelectorAll('.nav-item')[8])">
                             <i class="fa-solid fa-file-lines"></i><span>نماذج إدارية</span>
                         </div>
-                        <div class="welcome-quick-card" onclick="switchSection('ack-signoff', document.querySelectorAll('.nav-item')[9])">
+                        <div class="welcome-quick-card" onclick="switchSection('tracks-system', document.querySelectorAll('.nav-item')[9])">
+                            <i class="fa-solid fa-road"></i><span>نظام المقررات (المسارات)</span>
+                        </div>
+                        <div class="welcome-quick-card" onclick="switchSection('ack-signoff', document.querySelectorAll('.nav-item')[10])">
                             <i class="fa-solid fa-signature"></i><span>التوقيع بالعلم</span>
                         </div>
                     </div>
@@ -1507,13 +1546,24 @@
                     </div>
                     <div class="files-grid" id="filesGrid">${renderFilesList('admin-forms')}</div>
                 `;
+            } else if (secKey === 'tracks-system') {
+                currentSubTabKey = 'tracks-system';
+                main.innerHTML = `
+                    <div class="section-header">
+                        <h2><i class="fa-solid fa-road"></i> نظام المقررات (المسارات)</h2>
+                        ${isDesignerLoggedIn ? `<button class="designer-btn" onclick="openFileModal('tracks-system')"><i class="fa-solid fa-plus"></i> إضافة ملف</button>` : ''}
+                    </div>
+                    <div class="files-grid" id="filesGrid">${renderFilesList('tracks-system')}</div>
+                `;
             } else if (secKey === 'ack-signoff') {
                 currentSubTabKey = 'ack-signoff';
                 main.innerHTML = `
                     <div class="section-header">
                         <h2><i class="fa-solid fa-signature"></i> التوقيع بالعلم</h2>
-                        ${isDesignerLoggedIn ? `<button class="designer-btn" onclick="openAckFormModal()"><i class="fa-solid fa-plus"></i> إضافة مستند للتوقيع</button>` : ''}
                     </div>
+                    <p style="color:var(--text-muted); font-size:0.88rem; margin-bottom:1rem;">
+                        تظهر هنا تلقائياً كل المستندات المضافة في أي قسم بالموقع، لتوقيع رئيسات الأقسام عليها بالعلم.
+                    </p>
                     <div id="ackSignoffList">${renderAckSignoffList()}</div>
                 `;
                 loadSignaturesForVisibleDocs();
@@ -1525,21 +1575,21 @@
         // وتظهر تحته التواقيع التي أضافتها رئيسات الأقسام سابقاً
         // ============================================
         function renderAckSignoffList() {
-            const items = db['ack-signoff'] || [];
+            const items = allDocsFlat;
             if (items.length === 0) {
-                return `<div style="text-align: center; padding: 2rem; color: var(--text-muted);">لا توجد مستندات تحتاج توقيعاً حالياً.</div>`;
+                return `<div style="text-align: center; padding: 2rem; color: var(--text-muted);">لا توجد أي مستندات في الموقع حتى الآن.</div>`;
             }
 
             const deptOptions = DEPARTMENTS.map(d => `<option value="${d}">${d}</option>`).join('');
 
             let html = `
                 <div style="overflow-x:auto;">
-                <table class="styled-table" style="min-width:820px;">
+                <table class="styled-table ack-table">
                     <thead>
                         <tr>
                             <th>اسم الملف</th>
                             <th>تاريخ الإضافة</th>
-                            <th>اختيار القسم</th>
+                            <th>اختيار قسم التوقيع</th>
                             <th>التوقيع</th>
                             ${isDesignerLoggedIn ? '<th>إدارة</th>' : ''}
                         </tr>
@@ -1550,7 +1600,7 @@
             items.forEach(item => {
                 html += `
                     <tr>
-                        <td style="text-align:right;">
+                        <td data-label="اسم الملف" style="text-align:right;">
                             ${item.url ? `
                                 <a href="${item.url}" target="_blank" style="color:var(--bright-blue); font-weight:700; text-decoration:none;">
                                     <i class="fa-solid fa-file-signature"></i> ${item.title}
@@ -1561,32 +1611,32 @@
                                 </span>
                             `}
                         </td>
-                        <td>${item.date}</td>
-                        <td>
+                        <td data-label="تاريخ الإضافة">${item.date}</td>
+                        <td data-label="اختيار قسم التوقيع">
                             <select id="deptSelect-${item.id}" style="width:100%; min-width:170px; padding:0.5rem; border:1px solid #cbd5e1; border-radius:8px;">
                                 <option value="">اختاري القسم...</option>
                                 ${deptOptions}
                             </select>
                         </td>
-                        <td>
+                        <td data-label="التوقيع">
                             <button class="btn-action btn-view" style="width:auto; padding:0.5rem 1rem;" onclick="openSignaturePad(${item.id})">
                                 <i class="fa-solid fa-signature"></i> توقيع
                             </button>
                         </td>
                         ${isDesignerLoggedIn ? `
-                        <td>
+                        <td data-label="إدارة">
                             <div style="display:flex; gap:6px; justify-content:center;">
-                                <button onclick="openAckFormModal(${item.id})" class="btn-action btn-edit" style="width:auto; padding:0.5rem 0.8rem;">
+                                <button onclick="editFileItem('${item.category}', ${item.id})" class="btn-action btn-edit" style="width:auto; padding:0.5rem 0.8rem;">
                                     <i class="fa-solid fa-pen"></i>
                                 </button>
-                                <button onclick="deleteFileItem('ack-signoff', ${item.id})" class="btn-action btn-delete" style="width:auto; padding:0.5rem 0.8rem;">
+                                <button onclick="deleteFileItem('${item.category}', ${item.id})" class="btn-action btn-delete" style="width:auto; padding:0.5rem 0.8rem;">
                                     <i class="fa-solid fa-trash"></i>
                                 </button>
                             </div>
                         </td>
                         ` : ''}
                     </tr>
-                    <tr>
+                    <tr class="ack-signatures-row">
                         <td colspan="${isDesignerLoggedIn ? 5 : 4}" style="background:#f8fafc; text-align:right; padding:0.8rem 1rem;">
                             <div id="signaturesList-${item.id}" class="signatures-list">
                                 <span style="font-size:0.82rem; color:var(--text-muted);">جارِ تحميل التواقيع...</span>
@@ -1604,9 +1654,9 @@
             return html;
         }
 
-        // تحميل كل التواقيع الخاصة بمستندات هذا القسم من قاعدة البيانات وعرضها تحت كل مستند
+        // تحميل كل التواقيع الخاصة بجميع مستندات الموقع وعرضها تحت كل مستند
         async function loadSignaturesForVisibleDocs() {
-            const items = db['ack-signoff'] || [];
+            const items = allDocsFlat;
             if (items.length === 0) return;
 
             const { data, error } = await supabaseClient
@@ -1741,70 +1791,6 @@
             } catch (err) {
                 console.error(err);
                 alert('تعذّر حفظ التوقيع: ' + (err.message || 'خطأ غير معروف'));
-            }
-        }
-
-        // ============================================
-        // إضافة/تعديل مستندات "التوقيع بالعلم" - اسم وتاريخ فقط بدون رفع ملف
-        // ============================================
-        function openAckFormModal(editId = null) {
-            document.getElementById('ackFormErrorMsg').style.display = 'none';
-            if (editId) {
-                const item = (db['ack-signoff'] || []).find(i => i.id == editId);
-                if (!item) return;
-                document.getElementById('ackEditId').value = item.id;
-                document.getElementById('ackTitleInput').value = item.title;
-                document.getElementById('ackDateInput').value = item.date;
-                document.getElementById('ackFormTitle').innerHTML = '<i class="fa-solid fa-file-signature"></i> تعديل مستند التوقيع';
-            } else {
-                document.getElementById('ackEditId').value = '';
-                document.getElementById('ackTitleInput').value = '';
-                document.getElementById('ackDateInput').value = new Date().toISOString().split('T')[0];
-                document.getElementById('ackFormTitle').innerHTML = '<i class="fa-solid fa-file-signature"></i> إضافة مستند للتوقيع';
-            }
-            document.getElementById('ackFormModal').style.display = 'flex';
-        }
-
-        function closeAckFormModal() {
-            document.getElementById('ackFormModal').style.display = 'none';
-        }
-
-        async function saveAckDocument(e) {
-            e.preventDefault();
-            const editId = document.getElementById('ackEditId').value;
-            const title = document.getElementById('ackTitleInput').value.trim();
-            const dateValue = document.getElementById('ackDateInput').value;
-            const errMsg = document.getElementById('ackFormErrorMsg');
-            errMsg.style.display = 'none';
-
-            if (!title || !dateValue) {
-                errMsg.innerText = 'يرجى تعبئة اسم المستند والتاريخ.';
-                errMsg.style.display = 'block';
-                return;
-            }
-
-            const isoDate = new Date(dateValue + 'T12:00:00').toISOString();
-
-            try {
-                if (editId) {
-                    const { error } = await supabaseClient
-                        .from('documents')
-                        .update({ title: title, created_at: isoDate })
-                        .eq('id', editId);
-                    if (error) throw error;
-                } else {
-                    const { error } = await supabaseClient
-                        .from('documents')
-                        .insert({ category: 'ack-signoff', title: title, file_url: '', storage_path: null, created_at: isoDate });
-                    if (error) throw error;
-                }
-                await loadAllDocumentsFromSupabase();
-                closeAckFormModal();
-                renderSection('ack-signoff');
-            } catch (err) {
-                console.error(err);
-                errMsg.innerText = 'حدث خطأ أثناء الحفظ: ' + (err.message || 'خطأ غير معروف');
-                errMsg.style.display = 'block';
             }
         }
 
