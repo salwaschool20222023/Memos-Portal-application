@@ -905,7 +905,7 @@
                     <div class="sync-pulse"></div> مباشر
                 </div>
             </div>
-            <button class="extra-btn" id="notifyBtn" onclick="enableNotificationsClick()" style="background:#0f766e; margin-bottom:14px;">
+            <button class="extra-btn" id="notifyBtn" onclick="toggleNotifications()" style="background:#0f766e; margin-bottom:14px;">
                 <i class="fa-solid fa-bell"></i> تفعيل التنبيهات
             </button>
             <ul class="nav-list">
@@ -1267,32 +1267,65 @@
             if (error) console.error('تعذّر حفظ اشتراك التنبيهات:', error);
         }
 
-        async function enableNotificationsClick() {
+        async function unsubscribeFromPush(reg) {
+            const subscription = await reg.pushManager.getSubscription();
+            if (!subscription) return;
+            const endpoint = subscription.endpoint;
+            await subscription.unsubscribe();
+            const { error } = await supabaseClient.from('push_subscriptions').delete().eq('endpoint', endpoint);
+            if (error) console.error('تعذّر حذف اشتراك التنبيهات:', error);
+        }
+
+        // زر يعمل كمفتاح تشغيل/إيقاف: يفعّل التنبيهات إن كانت متوقفة، أو يلغيها إن كانت مفعّلة — القرار للمستخدمة بالكامل
+        async function toggleNotifications() {
             if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
                 alert('عذراً، متصفحك الحالي لا يدعم التنبيهات.\n\nعلى آيفون: أضيفي الموقع للشاشة الرئيسية أولاً (زر المشاركة ← "إضافة إلى الشاشة الرئيسية")، ثم افتحي التطبيق من الأيقونة وأعيدي المحاولة من هناك (يتطلب iOS 16.4 فأحدث).');
                 return;
             }
+
             try {
+                const reg = await navigator.serviceWorker.ready;
+                const existing = await reg.pushManager.getSubscription();
+
+                if (existing) {
+                    // التنبيهات مفعّلة حالياً — تريد إلغاءها
+                    if (!confirm('هل تريدين إلغاء تفعيل التنبيهات؟ لن تصلك إشعارات بالمستندات الجديدة بعد الآن.')) return;
+                    await unsubscribeFromPush(reg);
+                    updateNotifyButtonUI();
+                    alert('تم إلغاء التنبيهات.');
+                    return;
+                }
+
+                // التنبيهات غير مفعّلة — تريد تفعيلها
                 const permission = await Notification.requestPermission();
                 if (permission !== 'granted') {
                     alert('لم يتم منح إذن التنبيهات. يمكنك تفعيلها لاحقاً من إعدادات المتصفح لهذا الموقع.');
                     return;
                 }
-                const reg = await navigator.serviceWorker.ready;
                 await subscribeToPush(reg);
                 updateNotifyButtonUI();
                 alert('تم تفعيل التنبيهات بنجاح! ستصلك إشعارات فورية عند إضافة أي مستند جديد، حتى لو كان التطبيق مغلقاً.');
             } catch (e) {
                 console.error(e);
-                alert('حدث خطأ أثناء تفعيل التنبيهات، حاولي مرة أخرى.');
+                alert('حدث خطأ، حاولي مرة أخرى.');
             }
         }
 
-        function updateNotifyButtonUI() {
+        async function updateNotifyButtonUI() {
             const btn = document.getElementById('notifyBtn');
             if (!btn) return;
-            if ('Notification' in window && Notification.permission === 'granted') {
-                btn.innerHTML = '<i class="fa-solid fa-bell"></i> التنبيهات مُفعّلة';
+
+            let isSubscribed = false;
+            if ('serviceWorker' in navigator && 'PushManager' in window && Notification.permission === 'granted') {
+                try {
+                    const reg = await navigator.serviceWorker.ready;
+                    const sub = await reg.pushManager.getSubscription();
+                    isSubscribed = !!sub;
+                } catch (e) { /* تجاهل */ }
+            }
+
+            if (isSubscribed) {
+                btn.innerHTML = '<i class="fa-solid fa-bell-slash"></i> إلغاء التنبيهات';
                 btn.classList.add('notify-active');
             } else {
                 btn.innerHTML = '<i class="fa-solid fa-bell"></i> تفعيل التنبيهات';
